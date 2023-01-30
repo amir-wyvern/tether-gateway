@@ -6,24 +6,14 @@ from schemas import (
     BotUserUpdateProfile
 )
 from db.models import DbUser
-# from db.hash import Hash
+from db.hash import Hash
 from exceptions import EmailNotValid
 from datetime import datetime
 
 
-def hashPass(password):
-
-    salt = "dd211c31dd2abf6875ce5bb570cc71e9523386757d255a4f5155d"    
-    dataBase_password = password+salt
-    hashed_pass = hashlib.sha3_256(dataBase_password.encode()).hexdigest()
-
-    return hashed_pass
-
 def create_user(request: BotUserRegister, db: Session):
 
-    password_hash = hashPass(request.password)  
-
-
+    password_hash = Hash.sha3_256(request.password)  
     relferal_link = base64.urlsafe_b64encode(uuid.uuid1().bytes).decode()[:12] 
 
     user = DbUser(
@@ -69,7 +59,7 @@ def delete_user(user_id, db:Session):
 
 def update_password(user_id, db:Session):
 
-    password_hash = hashPass(request.password)  
+    password_hash = Hash.sha3_256(request.password)  
 
     user = db.query(DbUser).filter(DbUser.user_id == user_id)
     user.update({
