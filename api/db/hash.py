@@ -1,4 +1,6 @@
 import hashlib
+import base64
+import uuid
 
 class Hash:
 
@@ -19,3 +21,7 @@ class Hash:
             return True
         
         return False
+
+    @staticmethod
+    def generate_referal_link():
+        return base64.urlsafe_b64encode(uuid.uuid1().bytes).decode()[:12] 

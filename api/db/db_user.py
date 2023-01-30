@@ -3,7 +3,8 @@ from sqlalchemy.orm.session import Session
 from schemas import (
     BotUserRegister,
     BotUserBase,
-    BotUserUpdateProfile
+    BotUserUpdateProfile,
+    BotUpdatePassword
 )
 from db.models import DbUser
 from db.hash import Hash
@@ -14,7 +15,7 @@ from datetime import datetime
 def create_user(request: BotUserRegister, db: Session):
 
     password_hash = Hash.sha3_256(request.password)  
-    relferal_link = base64.urlsafe_b64encode(uuid.uuid1().bytes).decode()[:12] 
+    relferal_link = Hash.generate_referal_link()
 
     user = DbUser(
         tel_id= request.tel_id,
@@ -46,8 +47,15 @@ def get_user(user_id, db:Session):
     return db.query(DbUser).filter(DbUser.user_id == user_id ).first()
 
 def get_user_by_telegram_id(tel_id, db:Session):
-    print(1)
     return db.query(DbUser).filter(DbUser.tel_id == tel_id ).first()
+
+
+def get_user_by_phone_number(phone_number, db:Session):
+    return db.query(DbUser).filter(DbUser.phone_number == phone_number).first()
+
+
+def get_user_by_email(email, db:Session):
+    return db.query(DbUser).filter(DbUser.email == email).first()
 
 
 def delete_user(user_id, db:Session):
@@ -57,9 +65,9 @@ def delete_user(user_id, db:Session):
     return True
 
 
-def update_password(user_id, db:Session):
+def update_password(user_id, request:BotUpdatePassword, db:Session):
 
-    password_hash = Hash.sha3_256(request.password)  
+    password_hash = Hash.sha3_256(request.new_password)  
 
     user = db.query(DbUser).filter(DbUser.user_id == user_id)
     user.update({
