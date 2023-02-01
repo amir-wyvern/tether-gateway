@@ -8,10 +8,13 @@ from sqlalchemy import (
     VARCHAR,
     Float,
     CheckConstraint,
-    DateTime
+    DateTime,
+    Enum
     )
-
+import enum
 from sqlalchemy.orm import relationship
+
+
 
 
 class DbUser(Base):
@@ -52,7 +55,8 @@ class DbMainAccounts(Base):
 class DbConfig(Base):
     __tablename__ = 'config'
 
-    index = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    index = Column(Integer, default=1, unique=True)
     withdraw_lock = Column(Boolean, nullable=False, default=False) 
     deposit_lock = Column(Boolean, nullable=False, default=False)
     transfer_lock = Column(Boolean, nullable=False, default=False)
@@ -84,42 +88,57 @@ class DbTransferHistory(Base):
 
 
 
-# class DbWithdrawHistory(Base):
-#     __tablename__ = 'withdraw_history'
+class DbWithdrawHistory(Base):
+    __tablename__ = 'withdraw_history'
 
-#     tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
-#     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
-#     destination_address = Column(VARCHAR(42), index=True, nullable=False)
-#     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
-#     withdraw_fee_percentage = Column(Float(9,6), nullable=False) # CheckConstraint('transfer_fee_percentage > 0')
-#     withdraw_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('withdraw_fee_value > 0')
-#     timestamp = Column(DateTime, nullable=False)
+    tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    destination_address = Column(VARCHAR(42), index=True, nullable=False)
+    value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+    withdraw_fee_percentage = Column(Float(9,6), nullable=False) # CheckConstraint('transfer_fee_percentage > 0')
+    withdraw_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('withdraw_fee_value > 0')
+    timestamp = Column(DateTime, nullable=False)
 
-#     relUser = relationship("DbUser")
-
-
-# class DbDepositHistory(Base):
-#     __tablename__ = 'deposit_history'
-
-#     tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
-#     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
-#     origin_address = Column(VARCHAR(42), index=True, nullable=False)
-#     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
-#     timestamp = Column(DateTime, nullable=False)
-
-#     relUser = relationship("DbUser")
+    # relUser = relationship("DbUser")
 
 
-# class DdRequestDeposit(Base):
-#     __tablename__ = 'request_deposit'
+class DbDepositHistory(Base):
+    __tablename__ = 'deposit_history'
 
-#     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-#     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
-#     origin_address = Column(VARCHAR(42), index=True, nullable=False)
-#     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
-#     timestamp = Column(DateTime, nullable=False)
+    tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    origin_address = Column(VARCHAR(42), index=True, nullable=False)
+    value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+    timestamp = Column(DateTime, nullable=False)
 
-#     relUser = relationship("DbUser")
+    # relUser = relationship("DbUser")
+
+class STATUS(enum.Enum):
+    WAITING = 1
+    RECEIVED = 2
+    FAILED = 3
+
+
+class DdRequestDeposit(Base):
+    __tablename__ = 'request_deposit'
+
+    request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    origin_address = Column(VARCHAR(42), index=True, nullable=False)
+    value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+    status = Column(Enum(STATUS), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+
+
+
+    
+class DdReceiveTx(Base):
+    __tablename__ = 'receive_tx'
+
+    tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
+    origin_address = Column(VARCHAR(42), index=True, nullable=False)
+    value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+    timestamp = Column(DateTime, nullable=False)
 
 
 
