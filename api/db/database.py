@@ -1,9 +1,14 @@
-from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 
-SQLALCHEMY_DATABASE_URL = 'mysql+pymysql://root:<password>@localhost/exchange'
+dotenv_path = Path('.env')
+load_dotenv(dotenv_path=dotenv_path)
+
+SQLALCHEMY_DATABASE_URL = os.getenv('SQLALCHEMY_DATABASE_URL')
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 Base = declarative_base() 
@@ -17,11 +22,4 @@ def get_db():
         yield session
     finally:
         session.close()
-
-
-
-
-
-
-
 

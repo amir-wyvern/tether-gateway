@@ -7,14 +7,10 @@ from sqlalchemy import (
     ForeignKey,
     VARCHAR,
     Float,
-    CheckConstraint,
     DateTime,
     Enum
     )
 import enum
-from sqlalchemy.orm import relationship
-
-
 
 
 class DbUser(Base):
@@ -113,20 +109,20 @@ class DbDepositHistory(Base):
 
     # relUser = relationship("DbUser")
 
-class STATUS(enum.Enum):
+class DepositRequestStatus(enum.Enum):
     WAITING = 1
     RECEIVED = 2
     FAILED = 3
 
 
-class DdRequestDeposit(Base):
-    __tablename__ = 'request_deposit'
+class DdDepositRequest(Base):
+    __tablename__ = 'deposit_request'
 
     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     origin_address = Column(VARCHAR(42), index=True, nullable=False)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
-    status = Column(Enum(STATUS), nullable=False)
+    status = Column(Enum(DepositRequestStatus), nullable=False)
     timestamp = Column(DateTime, nullable=False)
 
 

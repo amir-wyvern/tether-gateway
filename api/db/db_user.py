@@ -1,15 +1,12 @@
-import hashlib
 from sqlalchemy.orm.session import Session
 from sqlalchemy import or_
 from schemas import (
     UserRegister,
-    UserBase,
     UserUpdateProfile,
     UpdatePassword
 )
 from db.models import DbUser
 from db.hash import Hash
-from exceptions import EmailNotValid
 from datetime import datetime
 
 
@@ -27,7 +24,7 @@ def create_user(request: UserRegister, db: Session):
         name= request.name,
         lastname= request.lastname,
         balance= 0,
-        photo= request.photo,
+        photo= None,
         number_of_invented= 0,
         bonus_of_invented= 0,
         register_time= datetime.now(),
@@ -55,9 +52,11 @@ def get_all_users(db:Session):
 def get_user(user_id, db:Session):
     return db.query(DbUser).filter(DbUser.user_id == user_id ).first()
 
+def get_user_by_referal_link(referal_link, db:Session):
+    return db.query(DbUser).filter(DbUser.referal_link == referal_link ).first()
+
 def get_user_by_telegram_id(tel_id, db:Session):
     return db.query(DbUser).filter(DbUser.tel_id == tel_id ).first()
-
 
 def get_user_by_phone_number(phone_number, db:Session):
     return db.query(DbUser).filter(DbUser.phone_number == phone_number).first()
@@ -66,13 +65,11 @@ def get_user_by_phone_number(phone_number, db:Session):
 def get_user_by_email(email, db:Session):
     return db.query(DbUser).filter(DbUser.email == email).first()
 
-
 def delete_user(user_id, db:Session):
     user = get_user(user_id, db)
     db.delete(user)
     db.commit()
     return True
-
 
 def update_password(user_id, request:UpdatePassword, db:Session):
 
@@ -97,9 +94,19 @@ def update_balance(user_id, new_balance, db:Session):
 
     return True
 
-def update_user_profile(user_id, request:UserUpdateProfile, db:Session):
+def increase_number_of_invented(user_id, db:Session):
 
     user = db.query(DbUser).filter(DbUser.user_id == user_id)
+    user.update({
+        DbUser.number_of_invented: DbUser.number_of_invented + 1,
+    })
+    db.commit()
+
+    return True
+
+def update_user_profile(user_id, request:UserUpdateProfile, db:Session):
+
+    user = db.query(DbUser).filter(DbUser.user_id == user_id)  
     user.update({
         DbUser.name: request.name,
         DbUser.lastname: request.lastname,
@@ -109,8 +116,3 @@ def update_user_profile(user_id, request:UserUpdateProfile, db:Session):
     db.commit()
 
     return True
-
-
-
-# (tel_id, phone_number, referal_link, password, email, name, lastname, balance, photo, number_of_invented, bonus_of_invented, register_time, first_deposit_value) VALUES (%(tel_id)s, %(phone_number)s, %(referal_link)s, %(password)s, %(email)s, %(name)s, %(lastname)s, %(balance)s, %(photo)s, %(number_of_invented)s, %(bonus_of_invented)s, %(register_time)s, %(first_deposit_value)s)]
-# [{'tel_id': 1011, 'phone_number': 'string2222', 'referal_link': '_XFjeKJLEe2e', 'password': '077d15fd0686819a58a140a3693de9fbd4be46523add63afea3baaad28c0d9fe', 'email': 'user1@example.com', 'name': 'string', 'lastname': 'string', 'balance': 0, 'photo': 'string', 'number_of_invented': 0, 'bonus_of_invented': 0, 'register_time': datetime.datetime(2023, 2, 1, 19, 47, 57, 669329), 'first_deposit_value': 0}]

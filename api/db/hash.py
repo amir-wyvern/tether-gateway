@@ -2,9 +2,18 @@ import hashlib
 import base64
 import uuid
 
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+dotenv_path = Path('.env')
+load_dotenv(dotenv_path=dotenv_path)
+
+SHA_SALT = os.getenv('SHA_SALT')
+
 class Hash:
 
-    salt = 'dd211c31dd2abf6875ce5bb570cc71e9523386757d255a4f5155d'
+    salt = SHA_SALT
 
     @staticmethod
     def sha3_256(password):
