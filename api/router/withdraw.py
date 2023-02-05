@@ -56,8 +56,8 @@ def withdraw_comfirmation(request: WithdrawConfirmation, user_id: int=Depends(ge
     return JSONResponse(status_code=200, content={'message':'the request is proccessing'})
 
 
-@router.post('/history', response_model=WithdrawtHistoryResponse, responses={404:{'model':HTTPError}})
-def withdraw_comfirmation(request: WithdrawHistoryRequest, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
+@router.get('/history', response_model=WithdrawtHistoryResponse, responses={404:{'model':HTTPError}})
+def withdraw_comfirmation(offset: int, count: int, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
     return JSONResponse(status_code=200, content={'txs':[] })
 
