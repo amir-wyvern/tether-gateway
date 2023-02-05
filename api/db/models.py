@@ -75,6 +75,7 @@ class DbTransferHistory(Base):
     tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
     origin_user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     destination_user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    error_message = Column(VARCHAR(400), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
     transfer_fee_percentage = Column(Float(9,6), nullable=False) # CheckConstraint('transfer_fee_percentage > 0')
     transfer_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('transfer_fee_value > 0')
@@ -90,6 +91,7 @@ class DbWithdrawHistory(Base):
     tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     destination_address = Column(VARCHAR(42), index=True, nullable=False)
+    error_message = Column(VARCHAR(400), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
     withdraw_fee_percentage = Column(Float(9,6), nullable=False) # CheckConstraint('transfer_fee_percentage > 0')
     withdraw_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('withdraw_fee_value > 0')
@@ -104,6 +106,7 @@ class DbDepositHistory(Base):
     tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     origin_address = Column(VARCHAR(42), index=True, nullable=False)
+    error_message = Column(VARCHAR(400), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
     timestamp = Column(DateTime, nullable=False)
 
@@ -123,9 +126,25 @@ class DdDepositRequest(Base):
     origin_address = Column(VARCHAR(42), index=True, nullable=False)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
     status = Column(Enum(DepositRequestStatus), nullable=False)
+    error_message = Column(VARCHAR(400), nullable=True)
     timestamp = Column(DateTime, nullable=False)
 
 
+class WithdrawRequestStatus(enum.Enum):
+    WAITING = 1
+    RECEIVED = 2
+    FAILED = 3
+
+class DdWithdrawRequest(Base):
+    __tablename__ = 'withdraw_request'
+
+    request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    destintion_address = Column(VARCHAR(42), index=True, nullable=False)
+    value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+    status = Column(Enum(WithdrawRequestStatus), nullable=False)
+    error_message = Column(VARCHAR(400), nullable=True)
+    timestamp = Column(DateTime, nullable=False)
 
     
 class DdReceiveTx(Base):

@@ -17,8 +17,7 @@ class UpdateConfig(BaseModel):
 # Withdraw modeles
 class WithdrawRequest(BaseModel):
 
-    user_id: int = Field(ge=0)
-    value: float = Field(ge=0)
+    value: float = Field(gt=0)
     destination_address: str = Field(min_length=1, max_length=100)
 
 class WithdrawRequestResponse(BaseModel):
@@ -28,8 +27,58 @@ class WithdrawRequestResponse(BaseModel):
 
 class WithdrawConfirmation(BaseModel):
 
-    user_id: int = Field(ge=0)
     auth_code: int = Field(ge=100000,le=999999)
+
+class WithdrawHistoryRequest(BaseModel):
+
+    offset: int
+    count: int
+
+class WithdrawHistoryModel(BaseModel):
+
+    address: str
+    value: float
+    tx_hash: str
+    timestamp: int
+
+class WithdrawtHistoryResponse(BaseModel):
+
+    txs: List[WithdrawHistoryModel]
+
+
+
+# Transfer modeles
+class TransferRequest(BaseModel):
+
+    value: float = Field(gt=0)
+    destination_phone_number: str = Field(min_length=1, max_length=100)
+    origin_phone_number: str = Field(min_length=1, max_length=100)
+
+class TransferRequestResponse(BaseModel):
+    
+    message: str
+    request_id: int
+
+class TransferHistoryModel(BaseModel):
+
+    origin_address: str
+    destination_address: str
+    value: float
+    tx_hash: str
+    timestamp: int
+
+class TransferHistoryResponse(BaseModel):
+
+    txs: List[TransferHistoryModel]
+
+class TransferHistoryRequest(BaseModel):
+
+    offset: int
+    count: int
+
+
+
+
 
 
 # User
@@ -66,7 +115,6 @@ class UserAuthResponse(BaseModel):
 
 class UserDisplay(BaseModel):
 
-    user_id: int
     tel_id: Union[None, int]
     phone_number: str
     referal_link: str 
@@ -123,7 +171,7 @@ class DepositHistoryRequest(BaseModel):
     offset: int
     count: int
 
-class TxsHistory(BaseModel):
+class DepositHistoryModel(BaseModel):
 
     address: str
     value: float
@@ -132,7 +180,7 @@ class TxsHistory(BaseModel):
 
 class DepositHistoryResponse(BaseModel):
 
-    txs: List[TxsHistory]
+    txs: List[DepositHistoryModel]
 
 class ReceivedTx(BaseModel):
 

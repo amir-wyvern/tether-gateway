@@ -37,8 +37,8 @@ def deposit_request(request: DepositRequest, user_id: int=Depends(get_current_us
     if resp:
         return JSONResponse(status_code=200, content={'request_id': resp.request_id ,'message':'Deposit request registered'})
 
-    else:
-        raise HTTPException(status_code=403, detail={'internal_code':1003, 'message':'There was a problem in registering the deposit request'})
+    # else:
+    #     raise HTTPException(status_code=403, detail={'internal_code':1003, 'message':'There was a problem in registering the deposit request'})
 
 
 @router.post('/confirmation', response_model=BaseResponse, responses={404:{'model':HTTPError}})
