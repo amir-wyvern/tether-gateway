@@ -4,16 +4,16 @@ from sqlalchemy.orm.session import Session
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
+    HTTPException,Header
 )
 from schemas import (
     UserDisplay,
-    UserRegister,
     UserUpdateProfile,
     UpdatePassword,
     HTTPError,
     BaseResponse,
-    UserAuthResponse
+    UserAuthResponse,
+    UserAuthResponse,
 )
 from db import db_user
 from db.database import get_db
@@ -32,51 +32,12 @@ def user_info(user_id: int=Depends(get_current_user), db: Session=Depends(get_db
     return db_user.get_user(user_id, db)
 
 
-@router.post('/register', response_model=UserAuthResponse, responses={403:{'model':HTTPError}})
-def user_register(user: UserRegister, db: Session=Depends(get_db)):
-
-    data = db_user.check_exist_user(['email', 'tel_id', 'phone_number'] ,user, db) 
-
-    if data is not None and data.tel_id == user.tel_id:
-        raise HTTPException(status_code=403, detail={'internal_code':1005, 'message':'The user already exists!'})
-
-    if data is not None and data.phone_number == user.phone_number:
-        raise HTTPException(status_code=403, detail={'internal_code':1006, 'message':'The phone number already exists!'})
-
-    if data is not None and data.email == user.email:
-        raise HTTPException(status_code=403, detail={'internal_code':1007, 'message':'The email already exists!'})
-
-    if user.referal_link is not None:
-
-        resp = db_user.get_user_by_referal_link(user.referal_link, db)
-
-        if resp is None:
-            raise HTTPException(status_code=403, detail={'internal_code':1008, 'message':'The referal link not exists!'})
-        
-        db_user.increase_number_of_invented(resp.user_id, db)
-
-    new_user_data = db_user.create_user(user, db)
-    
-    if new_user_data is None:
-        raise HTTPException(status_code=403, detail={'internal_code':1010, 'message':'There was a problem in registering!'})
-    
-    access_token = create_access_token(data={'sub': new_user_data.user_id})
-
-    resp = {
-        'access_token': access_token,
-        'type_token': 'bearer'
-    }
-
-    return UserAuthResponse(**resp)
-
-
 @router.post('/login', response_model=UserAuthResponse, responses={401:{'model':HTTPError}})
 def user_login(request: OAuth2PasswordRequestForm=Depends(), db: Session=Depends(get_db)):
 
-    number_phone = request.username
-    data = db_user.get_user_by_phone_number(number_phone, db)
+    phone_number = request.username
+    data = db_user.get_user_by_phone_number(phone_number, db)
 
-    print(number_phone, data.__dict__)
     if data is None :
         raise HTTPException(status_code=401, detail={'internal_code':1009, 'message':'The phone number or password is incorrect'})
 
@@ -124,3 +85,4 @@ def update_user_password(request: UpdatePassword, user_id: int=Depends(get_curre
     
     else:
         raise HTTPException(status_code=403, detail={'internal_code':1001, 'message':'The password is wrong'})
+
