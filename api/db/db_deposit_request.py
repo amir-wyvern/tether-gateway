@@ -11,6 +11,7 @@ def create_request(user_id ,request: DepositRequest, db: Session):
     request_deposit = DdDepositRequest(
         user_id= user_id,
         origin_address= request.origin_address,
+        destination_address= request.destination_address,
         value= request.value,
         status= DepositRequestStatus.WAITING,
         error_message=None,
