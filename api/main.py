@@ -4,7 +4,8 @@ from router import (
     user,
     deposit,
     withdraw,
-    transfer
+    transfer,
+    auth
 )
 from db import models, db_config
 from db.database import engine, get_db
@@ -20,6 +21,7 @@ app.include_router(user.router)
 app.include_router(deposit.router)
 app.include_router(withdraw.router)
 app.include_router(transfer.router)
+app.include_router(auth.router)
 
 models.Base.metadata.create_all(engine)
 db_config.init_table(get_db().__next__()) 
