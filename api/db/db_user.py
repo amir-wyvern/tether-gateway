@@ -1,7 +1,9 @@
 from sqlalchemy.orm.session import Session
 from sqlalchemy import or_
 from schemas import (
+    UserRegisterByEmail,
     UserRegister,
+    UserRegisterByPhoneNumber,
     UserUpdateProfile,
     UpdatePassword
 )
