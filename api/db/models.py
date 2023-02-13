@@ -18,8 +18,8 @@ class DbUser(Base):
     __tablename__ = 'user'
 
     user_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    tel_id = Column(Integer, unique=True, index=True)
-    phone_number = Column(VARCHAR(14), index=True, unique=True, nullable=False)
+    tel_id = Column(Integer, unique=True, index=True, nullable=True)
+    phone_number = Column(VARCHAR(14), index=True, unique=True, nullable=True)
     referal_link = Column(VARCHAR(100), index=True, unique=True, nullable=False)
     
     password = Column(String(200), nullable=False)
@@ -124,6 +124,7 @@ class DdDepositRequest(Base):
     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     origin_address = Column(VARCHAR(42), index=True, nullable=False)
+    destination_address = Column(VARCHAR(42), index=True, nullable=False)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
     status = Column(Enum(DepositRequestStatus), nullable=False)
     error_message = Column(VARCHAR(400), nullable=True)
