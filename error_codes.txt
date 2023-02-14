@@ -1,0 +1,15 @@
+1001 = The password is wrong
+1002 = It is not possible to edit the information
+1003 = There was a problem in registering the deposit request
+1004 = The user not found
+1005 = The user already exists!
+1006 = The phone number already exists!
+1007 = The email already exists!
+1008 = The referal link is not exists!
+1009 = The phone number or password is incorrect 
+1010 = There was a problem in registering
+1011 = Insufficient inventory
+1012 = The verification code is wrong!
+1013 = The phone number has not been verified
+1014 = The email has not been verified
+1015 = The email or password is incorrect
