@@ -1,10 +1,9 @@
 from fastapi.responses import JSONResponse
-from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm.session import Session
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,Header
+    HTTPException
 )
 from schemas import (
     UserDisplay,
@@ -12,15 +11,12 @@ from schemas import (
     UpdatePassword,
     HTTPError,
     BaseResponse,
-    UserAuthResponse,
-    UserAuthResponse,
 )
 from db import db_user
 from db.database import get_db
 from db.hash import Hash
 from auth.oauth2 import ( 
-    get_current_user,
-    create_access_token
+    get_current_user
 )
 
 router = APIRouter(prefix='/user', tags=['User'])
@@ -30,29 +26,6 @@ router = APIRouter(prefix='/user', tags=['User'])
 def user_info(user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
     
     return db_user.get_user(user_id, db)
-
-
-@router.post('/login', response_model=UserAuthResponse, responses={401:{'model':HTTPError}})
-def user_login(request: OAuth2PasswordRequestForm=Depends(), db: Session=Depends(get_db)):
-
-    phone_number = request.username
-    data = db_user.get_user_by_phone_number(phone_number, db)
-
-    if data is None :
-        raise HTTPException(status_code=401, detail={'internal_code':1009, 'message':'The phone number or password is incorrect'})
-
-    if Hash.verify(data.password, request.password) == False:
-        raise HTTPException(status_code=401, detail={'internal_code':1009, 'message':'The phone number or password is incorrect'})
-
-    access_token = create_access_token(data={'user_id': data.user_id})
-
-    resp = {
-        'access_token': access_token,
-        'type_token': 'bearer',
-    }
-
-    return UserAuthResponse(**resp)
-
 
 @router.post('/update', response_model=BaseResponse, responses={404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def update_user_profile(request: UserUpdateProfile, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
