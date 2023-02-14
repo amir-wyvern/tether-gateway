@@ -1,0 +1,4 @@
+RABBITMQ_PORT = 5672
+RABBITMQ_PWD = "guest"
+RABBITMQ_USER = "guest"
+RABBITMQ_HOST = "localhost"
