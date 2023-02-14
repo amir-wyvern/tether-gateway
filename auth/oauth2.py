@@ -22,7 +22,7 @@ OAUTH2_SECRET_KEY = os.getenv('OAUTH2_SECRET_KEY')
 OAUTH2_ALGORITHM = os.getenv('OAUTH2_ALGORITHM')
 OAUTH2_ACCESS_IDENTIFY_TOKEN_EXPIRE_MINUTES = int(os.getenv('OAUTH2_ACCESS_IDENTIFY_TOKEN_EXPIRE_MINUTES'))
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="user/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/phonenumber/login")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
   to_encode = data.copy()
