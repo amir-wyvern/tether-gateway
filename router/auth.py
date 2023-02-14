@@ -35,8 +35,6 @@ from datetime import timedelta
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
-# send +98905 and 0905 is same and danger for attack in db , coz attacher can register with another mode , i have find solution for that 
-# store token with data in redis instead of send to user and again use of them, its danger coz if user access to salt , then he can change data 
 
 @router.post('/email/request', response_model=UserAuthResponse, responses={403:{'model':HTTPError}})
 def email_auth_request(request: AuthEmailRequest, db: Session=Depends(get_db), db_cache= Depends(get_redis_cache)):
