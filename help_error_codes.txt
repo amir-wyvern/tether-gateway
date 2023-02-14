@@ -5,7 +5,7 @@
 1005 = The user already exists!
 1006 = The phone number already exists!
 1007 = The email already exists!
-1008 = The referal link is not exists!
+1008 = The referal link is invalid
 1009 = The phone number or password is incorrect 
 1010 = There was a problem in registering
 1011 = Insufficient inventory
