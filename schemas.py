@@ -124,8 +124,8 @@ class UserDisplay(BaseModel):
     lastname: str
     balance: float
     photo: Union[None, str] = Field(default=None)
-    number_of_invented: int
-    bonus_of_invented: float
+    number_of_invited: int
+    bonus_of_invited: float
     register_time: datetime
     first_deposit_value: float
 
