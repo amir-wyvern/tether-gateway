@@ -23,13 +23,13 @@ class DbUser(Base):
     referal_link = Column(VARCHAR(100), index=True, unique=True, nullable=False)
     
     password = Column(String(200), nullable=False)
-    email = Column(String(100), unique=True, nullable=True)
+    email = Column(String(100), index=True, unique=True, nullable=True)
     name = Column(String(100) ,nullable=False)
     lastname = Column(String(100), nullable=False)
     balance = Column(Float(15,6), nullable=False, default=0.0 ) # CheckConstraint('balance >= 0')
     photo = Column(VARCHAR(200), nullable=True, unique=True)
-    number_of_invented = Column(Integer, default=0, nullable=False) # CheckConstraint('number_of_invented >= 0')
-    bonus_of_invented = Column(Float(15,6), default=0.0, nullable=False) # CheckConstraint('bonus_of_invented >= 0.0')
+    number_of_invited = Column(Integer, default=0, nullable=False) # CheckConstraint('number_of_invited >= 0')
+    bonus_of_invited = Column(Float(15,6), default=0.0, nullable=False) # CheckConstraint('bonus_of_invited >= 0.0')
     register_time = Column(DateTime, nullable=False)
     first_deposit_value = Column(Integer) #  CheckConstraint('first_deposit_value >= 0')
 
