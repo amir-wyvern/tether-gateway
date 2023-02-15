@@ -27,8 +27,8 @@ def create_user(request: UserRegister, db: Session):
         lastname= request.lastname,
         balance= 0,
         photo= None,
-        number_of_invented= 0,
-        bonus_of_invented= 0,
+        number_of_invited= 0,
+        bonus_of_invited= 0,
         register_time= datetime.now(),
         first_deposit_value= 0
     )
@@ -96,11 +96,11 @@ def update_balance(user_id, new_balance, db:Session):
 
     return True
 
-def increase_number_of_invented(user_id, db:Session):
+def increase_number_of_invited(user_id, db:Session):
 
     user = db.query(DbUser).filter(DbUser.user_id == user_id)
     user.update({
-        DbUser.number_of_invented: DbUser.number_of_invented + 1,
+        DbUser.number_of_invited: DbUser.number_of_invited + 1,
     })
     db.commit()
 
