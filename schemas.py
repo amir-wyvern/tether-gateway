@@ -18,7 +18,7 @@ class UpdateConfig(BaseModel):
 # Auth
 class AuthType(str, Enum):
     phone_number = 'phone_number'
-    email = 'email'
+    email = 'email' 
     
 
 class AuthPhoneNumberRequest(BaseModel):
