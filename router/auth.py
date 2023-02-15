@@ -65,8 +65,8 @@ def phonenumber_auth_request(request: AuthPhoneNumberRequest, db: Session=Depend
 
 
     data_user = db_user.get_user_by_phone_number(request.data, db) 
-
-    if data_user is not None and data_user.phone_number  == data_user:
+    
+    if data_user is not None :
         raise HTTPException(status_code=403, detail={'internal_code':1005, 'message':'The user already exists!'})
 
     access_token = create_access_token(data={'data':request.data, 'scope':'auth:phonenumber:confirmation'}, expires_delta= timedelta(seconds=120))
@@ -89,8 +89,6 @@ def phonenumber_auth_confirmation(request: UserAuthConfirmation ,token_info: Use
     user_auth_code = request.auth_code
     auth_code = int( get_auth_code_by_session(token_info.token, db_cache) )
     
-    print(auth_code, user_auth_code )
-
     if auth_code != user_auth_code :
         raise HTTPException(status_code=401, detail={'internal_code':1012, 'message':'The verification code is wrong'})
 
@@ -129,7 +127,7 @@ def user_register_by_phonenumber(user: UserRegisterByPhoneNumber, token_info: Us
         if resp is None:
             raise HTTPException(status_code=403, detail={'internal_code':1008, 'message':'The referal link not exists!'})
         
-        db_user.increase_number_of_invented(resp.user_id, db)
+        db_user.increase_number_of_invited(resp.user_id, db)
 
     new_user_data = db_user.create_user(user, db)
     
@@ -174,7 +172,7 @@ def email_auth_request(request: AuthEmailRequest, db: Session=Depends(get_db), d
 
     data_user = db_user.get_user_by_email(request.data, db) 
 
-    if data_user is not None and data_user.email == request.data:
+    if data_user is not None:
         raise HTTPException(status_code=403, detail={'internal_code':1005, 'message':'The user already exists!'})
 
     access_token = create_access_token(data={'data':request.data, 'scope':'auth:email:confirmation'}, expires_delta= timedelta(seconds=120))
@@ -196,7 +194,7 @@ def email_auth_confirmation(request: UserAuthConfirmation ,token_info: UserAuthD
 
     user_auth_code = request.auth_code
     auth_code = int( get_auth_code_by_session(token_info.token, db_cache) )
-    print(auth_code, user_auth_code )
+    
     if auth_code != user_auth_code :
         raise HTTPException(status_code=401, detail={'internal_code':1012, 'message':'The verification code is wrong'})
 
@@ -236,7 +234,7 @@ def user_register_by_email(user: UserRegisterByEmail, token_info: UserAuthDecode
         if resp is None:
             raise HTTPException(status_code=403, detail={'internal_code':1008, 'message':'The referal link is invalid'})
         
-        db_user.increase_number_of_invented(resp.user_id, db)
+        db_user.increase_number_of_invited(resp.user_id, db)
 
     new_user_data = db_user.create_user(user, db)
     
