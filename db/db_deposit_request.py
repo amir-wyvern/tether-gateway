@@ -46,4 +46,18 @@ def get_request_deposit_by_user(user_id, db:Session, mode: Union[DepositRequestS
         return db.query(DdDepositRequest).filter(or_(DdDepositRequest.user_id == user_id, DdDepositRequest.status == mode)).all()
 
 
+def update_status_by_request_id(request_id, new_status: DepositRequestStatus, db: Session, error_message: str = None, commit=True):
+
+    obj = db.query(DdDepositRequest).filter(DdDepositRequest.request_id == request_id )
+    obj.update({
+        DdDepositRequest.status: new_status
+    })
+
+    if error_message: 
+        obj.update({
+            DdDepositRequest.error_message: error_message
+        })
+
+    if commit:
+        print(db.commit())
 
