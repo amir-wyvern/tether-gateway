@@ -24,6 +24,7 @@ from db.db_deposit_history import (
 from db.db_main_account import get_deposit_address
 from db.models import DepositRequestStatus, DepositHistoryStatus
 from schemas import DepositHistoryModelForDataBase
+from datetime import datetime
 
 
 config = dotenv_values("celery_deposit/.env")
@@ -115,7 +116,6 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         user_id = payload["user_id"]
         tx_hash = payload["tx_hash"]
 
-
         db = get_db().__next__()
 
         config = db_config.get_config(db)
@@ -142,8 +142,14 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         
         receipt = self.contract.tx_receipt(tx_hash)
 
-        if not receipt or receipt['status'] == 0 :
+        if not receipt :
             # send to notifaction
+            # send back to celery quete
+            pass
+            return
+        
+        if receipt['status'] == 0 : 
+            # send notif
             pass
             return
         
@@ -185,13 +191,13 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                     'error_message': None,
                     'status': DepositHistoryStatus.RECEIVED,
                     'value': value,
-                    'tx_timestamp': int,
-                    'timestamp': int
+                    'timestamp': datetime.now()
                 }
-                DepositHistoryModelForDataBase
-                create_deposit_history()
+                
+                create_deposit_history(DepositHistoryModelForDataBase(**data), db)
 
             else:
+                # send notif
                 pass
 
 
