@@ -10,8 +10,11 @@ from sqlalchemy import (
     DateTime,
     Enum
     )
-import enum
-
+from schemas import (
+    DepositHistoryStatus,
+    DepositRequestStatus,
+    WithdrawRequestStatus
+)
 
 class DbUser(Base):
 
@@ -99,15 +102,12 @@ class DbWithdrawHistory(Base):
 
     # relUser = relationship("DbUser")
 
-class DepositHistoryStatus(enum.Enum):
-    RECEIVED = 2
-    FAILED = 3
 
 class DbDepositHistory(Base):
     __tablename__ = 'deposit_history'
 
-    tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
-    request_id = Column(Integer, ForeignKey('deposit_request.request_id'), index=True, nullable=False)
+    request_id = Column(Integer, ForeignKey('deposit_request.request_id'), primary_key=True, unique=True, index=True)
+    tx_hash = Column(VARCHAR(100), unique=True, index=True, nullable=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     origin_address = Column(VARCHAR(42), index=True, nullable=True)
     destination_address = Column(VARCHAR(42), index=True, nullable=False)
@@ -117,10 +117,7 @@ class DbDepositHistory(Base):
     timestamp = Column(DateTime, nullable=False)
 
     # relUser = relationship("DbUser")
-class DepositRequestStatus(enum.Enum):
-    WAITING = 1
-    RECEIVED = 2
-    FAILED = 3
+
 
 class DdDepositRequest(Base):
     __tablename__ = 'deposit_request'
@@ -136,12 +133,6 @@ class DdDepositRequest(Base):
 
 
 
-
-
-class WithdrawRequestStatus(enum.Enum):
-    WAITING = 1
-    RECEIVED = 2
-    FAILED = 3
 
 class DdWithdrawRequest(Base):
     __tablename__ = 'withdraw_request'
