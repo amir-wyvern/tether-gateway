@@ -14,7 +14,7 @@ from schemas import (
     DepositHistoryRequest
 )
 
-from db import db_deposit_request
+from db import db_deposit_request, db_main_account
 from db.database import get_db
 
 from celery_tasks.tasks import DepositCeleryTask 
@@ -32,15 +32,15 @@ _, deposit_worker = create_worker_from(DepositCeleryTask)
 @router.post('/request', response_model=DepositRequestResponse, responses={403:{'model':HTTPError}})
 def deposit_request(request: DepositRequest, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
+    deposit_address = db_main_account.get_deposit_address(db)
     
-    resp = db_deposit_request.create_request(user_id, request, db)
-
+    resp = db_deposit_request.create_request(user_id, request.value, deposit_address, db)
 
     if resp:
-        return JSONResponse(status_code=200, content={'request_id': resp.request_id ,'deposit_address':'Deposit request registered'})
+        return JSONResponse(status_code=200, content={'request_id': resp.request_id ,'deposit_address': deposit_address})
 
-    # else:
-    #     raise HTTPException(status_code=403, detail={'internal_code':1003, 'message':'There was a problem in registering the deposit request'})
+    else:
+        raise HTTPException(status_code=403, detail={'internal_code':1003, 'message':'There was a problem in registering the deposit request'})
 
 
 @router.post('/confirmation', response_model=BaseResponse, responses={404:{'model':HTTPError}})
