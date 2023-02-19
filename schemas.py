@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 import re
 
+
 class UpdateConfig(BaseModel):
 
     withdraw_lock: bool
@@ -155,6 +156,12 @@ class HTTPError(BaseModel):
 
 
 # Withdraw modeles
+
+class WithdrawRequestStatus(int, Enum):
+    WAITING = 1
+    RECEIVED = 2
+    FAILED = 3
+
 class WithdrawRequest(BaseModel):
 
     value: float = Field(gt=0)
@@ -216,7 +223,29 @@ class TransferHistoryRequest(BaseModel):
     count: int
 
 
+
 # Deposit
+class DepositHistoryStatus(int, Enum):
+    RECEIVED = 2
+    FAILED = 3
+
+class DepositRequestStatus(int, Enum):
+    WAITING = 1
+    RECEIVED = 2
+    FAILED = 3
+
+class DepositHistoryModelForDataBase(BaseModel):
+
+    tx_hash: Union[str, None]
+    request_id: int
+    user_id: int
+    origin_address: Union[str, None] 
+    destination_address: str
+    error_message: Union[str, None]
+    status: DepositHistoryStatus
+    value: float
+    timestamp: datetime
+
 class DepositRequestResponse(BaseModel):
 
     deposit_address: str
