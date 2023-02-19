@@ -3,7 +3,7 @@ from db.models import DbDepositHistory
 from schemas import DepositHistoryModelForDataBase
 
 
-def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session):
+def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session, commit=True):
     
     deposit_history = DbDepositHistory(
         request_id= request.request_id,
@@ -18,10 +18,11 @@ def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session)
     )
     db.add(deposit_history)
 
-    db.commit()
-    db.refresh(deposit_history)
+    if commit:
+        db.commit()
+        db.refresh(deposit_history)
 
-    return deposit_history
+        return deposit_history
 
 
 # def get_request_deposit_by_id(request_id, db:Session, mode: Union[DepositRequestStatus, None]= None):
