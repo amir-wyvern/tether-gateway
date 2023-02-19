@@ -192,7 +192,6 @@ class TransferRequest(BaseModel):
 
     value: float = Field(gt=0)
     destination_phone_number: str = Field(min_length=1, max_length=100)
-    origin_phone_number: str = Field(min_length=1, max_length=100)
 
 class TransferRequestResponse(BaseModel):
     
@@ -226,8 +225,8 @@ class DepositRequestResponse(BaseModel):
 class DepositRequest(BaseModel):
 
     value: float = Field(gt=0)
-    origin_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
-    destination_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
+    # destination_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
+    # origin_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
 
 class DepositConfirmation(BaseModel):
 
