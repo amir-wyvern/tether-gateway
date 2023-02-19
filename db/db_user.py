@@ -88,13 +88,25 @@ def update_password(user_id, request:UpdatePassword, db:Session):
 
 def update_balance(user_id, new_balance, db:Session):
 
+
     user = db.query(DbUser).filter(DbUser.user_id == user_id)
     user.update({
-        DbUser.balance: new_balance,
+        DbUser.balance: round(new_balance, 6),
     })
     db.commit()
 
     return True
+
+def increase_balance(user_id, amount, db:Session, commit=True):
+
+    user = db.query(DbUser).filter(DbUser.user_id == user_id)
+    user.update({
+        DbUser.balance: round(float(user.first().balance) + amount, 6),
+    })
+
+    if commit:
+        db.commit()
+        return True
 
 def increase_number_of_invited(user_id, db:Session):
 
