@@ -13,3 +13,5 @@
 1013 = The phone number has not been verified
 1014 = The email has not been verified
 1015 = The email or password is incorrect
+1016 = There was a problem in registering the withdraw request
+1017 = There was a problem in registering the transfer request
