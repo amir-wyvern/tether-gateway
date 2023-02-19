@@ -1,32 +1,36 @@
 import sys
 
 sys.path.append('../')
-sys.path.append('../../')
 
-from time import sleep
-from celery_tasks.tasks import DepositCeleryTask, NotificationCeleryTask
+from celery_tasks.tasks import DepositCeleryTask
 from celery_tasks.utils import create_worker_from
 
 from web3 import Web3
-from web3.exceptions import TimeExhausted, TransactionNotFound
+from web3.exceptions import  TransactionNotFound
 
-from datetime import datetime ,timezone
-from db import db_deposit_request, db_config
+# from datetime import datetime ,timezone
+from db import db_config
 from db.database import get_db
-from fastapi import Depends
+# from fastapi import Depends
 import json
 from dotenv import dotenv_values
 
-config = dotenv_values(".env")
+from db.database import get_db
+from db.db_deposit_request import get_request_deposit_by_user
+from db.db_deposit_history import (
+    create_deposit_history,
+    get_history_deposit_by_tx_hash
+)
+from db.db_main_account import get_deposit_address
+from db.models import DepositRequestStatus, DepositHistoryStatus
+from schemas import DepositHistoryModelForDataBase
 
-# class Status(str, Enum):
-    
-#     REQUEST = 'REQUEST' 
-#     SUBMIT = 'SUBMIT'
 
-db = get_db().__next__()
+config = dotenv_values("celery_deposit/.env")
 
-class Tools:
+TRANSFER_HASH = config['TRASNFER_HASH']
+
+class Contract:
 
     def __init__(self) -> None:
 
@@ -34,7 +38,7 @@ class Tools:
         abi = config["ABI"]
         abi = abi.replace('\'', '"')
         abi = json.loads(abi)
-        self.tether = self.w3.eth.contract(address = config["CONTRACT"], abi = abi)
+        self.tether = self.w3.eth.contract(address= config["CONTRACT"], abi= abi)
 
     def tx_receipt(self, tx_hash):
         
@@ -43,7 +47,6 @@ class Tools:
             
             try:
                 receipt = self.w3.eth.getTransactionReceipt(tx_hash)
-                print('333',receipt)
                 return receipt
 
             except TransactionNotFound as e:
@@ -94,178 +97,110 @@ class Tools:
         except Exception as e:
             # set log
             return False
-        
-
-    # while True:
-    #     try :
-    #         break
-
-    #     except RequestsError as e:
-            
-    #         log.error(f'!! [{accounts_handler.getName(address)}] RequestsError - [{e}]')
-    #         utl.get_network(_next= True)
-    #         if failed_count_of_req > 3 :
-    #             log.info(f'!! [{accounts_handler.getName(address)}] failed tx [{hero_id}, {price}] ')
-    #             return False
-
-    #         failed_count_of_req += 1
-
-    #     except RequestsTimeoutError :
-
-    #         log.error(f'!! [{accounts_handler.getName(address)}] RequestsTimeoutError - [{e}]')
-    #         utl.get_network(_next= True)
-    #         if failed_count_of_req > 3 :
-    #             log.info(f'!! [{accounts_handler.getName(address)}] failed tx [{hero_id}, {price}] ')
-    #             return False
     
-    #         failed_count_of_req += 1
+    @staticmethod
+    def to_check_sum_address(address):
 
-    #     except Exception as e :
+        return Web3.toChecksumAddress(hex(int(address, 16)))
 
-    #         log.error(f'!! [{accounts_handler.getName(address)}] error - [{e}]')
-    #         utl.get_network(_next= True)
-    #         if failed_count_of_req > 3 :
-    #             log.info(f'!! [{accounts_handler.getName(address)}] 3 time failed tx [{hero_id}-{price}] ')
-    #             return False
-            
-    #         failed_count_of_req += 1
 
 class DepositCeleryTaskImpl(DepositCeleryTask):
 
     def __init__(self):
 
-        self.tools = Tools()
+        self.contract = Contract()
 
     def run(self, payload):
         
-        user_id = payload['user_id']
-        tx_hash = payload['tx_hash']
+        user_id = payload["user_id"]
+        tx_hash = payload["tx_hash"]
+
+
+        db = get_db().__next__()
 
         config = db_config.get_config(db)
 
-        print(config.deposit_lock)
+        # print(config.deposit_lock)
         if config.deposit_lock == True:
             # send to notifacion 
             pass
-    
-        receipt = self.tools.tx_receipt(tx_hash)
-        print('\n---------------- receipt ')
-        print(receipt)
+            return
+        
+        deposit_requests = get_request_deposit_by_user(user_id, db, DepositRequestStatus.WAITING)
+
+        if deposit_requests is None:
+            # send to notifaction
+            pass
+            return
+        
+        old_history_deposit = get_history_deposit_by_tx_hash(tx_hash, db)
+
+        if old_history_deposit is not None and old_history_deposit.status == DepositHistoryStatus.RECEIVED:
+            # send to notifaction
+            pass
+            return
+        
+        receipt = self.contract.tx_receipt(tx_hash)
 
         if not receipt or receipt['status'] == 0 :
             # send to notifaction
             pass
+            return
+        
+        state = False
+        for log in receipt['logs']:
 
-        tx_data = self.tools.get_tx(tx_hash)
-        print('\n---------------- tx data ')
-        print(tx_data)
+            if 'address' in log and \
+                log.address == self.contract.tether.address and \
+                log.topics[0].hex() == TRANSFER_HASH:
+                
+                blockNumber = receipt.blockNumber
+                from_address=  Contract.to_check_sum_address(log.topics[1].hex())
+                to_address = Contract.to_check_sum_address(log.topics[2].hex())
 
-        if 'from' not in tx_data and 'input' not in tx_data :
-            # send to notifaction
-            pass
+                if to_address != Contract.to_check_sum_address( get_deposit_address(db) ):
+                    # set log
+                    break
 
-        amountTxHash = self.tools.decode_input(tx_data['input'])
-        print('\n---------------- amount ')
-        print(amountTxHash)
+                value = int(log.data, 16)
+                state = True
+
+                print(blockNumber,from_address, to_address, value)
+                
+                break
             
-        # if lock and lock[0] == False :
+        if state == False:
+            # send to notification
+            pass
+            return
+        
+        for request in deposit_requests:
+            if round(request.value, 2) == round(value, 2):
+                data = {
+                    'tx_hash': tx_hash,
+                    'request_id': request.request_id,
+                    'user_id': user_id,
+                    'origin_address': from_address ,
+                    'destination_address': to_address,
+                    'error_message': None,
+                    'status': DepositHistoryStatus.RECEIVED,
+                    'value': value,
+                    'tx_timestamp': int,
+                    'timestamp': int
+                }
+                DepositHistoryModelForDataBase
+                create_deposit_history()
 
-        #     """ actual implementation """
+            else:
+                pass
 
-
-
-
-        #     if payload['status'] == Status.REQUEST:
-                
-        #         user_id = payload['user_id']
-        #         amount = payload['amount']
-        #         origin_address = payload['origin_address']
-        #         timestamp = datetime.now(timezone.utc)
-                
-        #         cursor.execute(f"insert into request_deposits (user_id,origin_address,amount,timestamp) values ({user_id},\'{origin_address}\',{amount},TIMESTAMP \'{timestamp}\');")
-        #         conn.commit()
-
-        #     elif payload['status'] == Status.SUBMIT:
-                
-        #         user_id = payload['user_id']
-        #         tx_hash = payload['tx_hash']
-
-        #         try : 
-        #             receipt = self.w3.eth.getTransactionReceipt(tx_hash)
-        #             if receipt['status']  :
-        #                 txInfo = self.w3.eth.get_transaction(tx_hash)
-        #                 print( f"2: {'from' in txInfo} {'input' in txInfo }")
-        #                 if 'from' in txInfo and 'input' in txInfo :
-        #                     try:
-        #                         amountTxHash = self.tether.decode_function_input(txInfo['input'])[1]['amount'] / 10**18
-        #                     except Exception as e:
-
-        #                         payload = {
-        #                             'user_id': user_id,
-        #                             'text': ''
-        #                         }
-
-        #                         notifaction_worker.apply_async(args=(payload,))
-        #                         print('decode functions : ' , e)
-                                
-        #                         return
-
-                            
-        #                     cursor.execute(f"select 1 from deposit_history where tx_hash='{tx_hash}';")
-        #                     exist_tx = cursor.fetchone()
-        #                     print('exist_tx : ', exist_tx)
-
-        #                     if exist_tx == None:
-
-        #                         cursor.execute(f'select (request_id,user_id,origin_address,amount,timestamp) from request_deposits where user_id={user_id};')
-        #                         ls_txs = cursor.fetchall()
-        #                         print(ls_txs)
-                                
-        #                         if ls_txs :
-        #                             for tx in ls_txs:
-                                        
-        #                                 tx = literal_eval(tx[0])
-        #                                 amount = tx[3]
-        #                                 request_id = tx[0]
-                                        
-        #                                 if hex(tx[2]).lower() == txInfo['from'].lower() and int(amount) == int(amountTxHash):
-        #                                     print('=========')
-
-        #                                     cursor.execute(f"""
-        #                                         insert into deposit_history (tx_hash,user_id,origin_address,amount,timestamp) values 
-        #                                         (\'{receipt.get('transactionHash').hex()}\',{user_id},\'{receipt.get('from')}\',{amountTxHash},TIMESTAMP \'{datetime.now(timezone.utc)}\');""")   
-        #                                     cursor.execute(f"""delete from request_deposits where request_id={request_id} """)
-        #                                     conn.commit()
-        #                         else:
-        #                             print('tx not submit in requests desposit')
-                                
-        #                     else:
-        #                         print('if 2')
-
-        #                 else:
-        #                     print('tx invalid')
-        #             else :
-        #                 print('if 1', receipt['status'] , 'from' in receipt , 'data' in receipt)
-
-        #         except TransactionNotFound as e:
-        #             print('TransactionNotFound')
-
-        #         except Exception as e:
-        #             print('Exception : ' , e)
-                
-
-        #     return True
-
-        # else:
-        #     pass
 
 
 # create celery app
 app, _ = create_worker_from(DepositCeleryTaskImpl)
-_, notifaction_worker = create_worker_from(NotificationCeleryTask)
+# _, notifaction_worker = create_worker_from(NotificationCeleryTask)
 
 # start worker
 if __name__ == '__main__':
     app.worker_main()
-
 
