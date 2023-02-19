@@ -16,7 +16,8 @@ import json
 from dotenv import dotenv_values
 
 from db.database import get_db
-from db.db_deposit_request import get_request_deposit_by_user
+from db.db_user import increase_balance
+from db.db_deposit_request import get_request_deposit_by_user, update_status_by_request_id
 from db.db_deposit_history import (
     create_deposit_history,
     get_history_deposit_by_tx_hash
@@ -29,7 +30,7 @@ from datetime import datetime
 
 config = dotenv_values("celery_deposit/.env")
 
-TRANSFER_HASH = config['TRASNFER_HASH']
+TRANSFER_HASH = config['TRANSFER_HASH']
 
 class Contract:
 
@@ -127,14 +128,14 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
             return
         
         deposit_requests = get_request_deposit_by_user(user_id, db, DepositRequestStatus.WAITING)
-
-        if deposit_requests is None:
+        print( 'deposit_requests: ', deposit_requests)
+        if deposit_requests == []:
             # send to notifaction
             pass
             return
         
         old_history_deposit = get_history_deposit_by_tx_hash(tx_hash, db)
-
+        print('old_history_deposit:',old_history_deposit)
         if old_history_deposit is not None and old_history_deposit.status == DepositHistoryStatus.RECEIVED:
             # send to notifaction
             pass
@@ -143,6 +144,7 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         receipt = self.contract.tx_receipt(tx_hash)
 
         if not receipt :
+            print(' not receipt')
             # send to notifaction
             # send back to celery quete
             pass
@@ -150,8 +152,10 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         
         if receipt['status'] == 0 : 
             # send notif
+            print("Receipt['status'] == 0 ")
             pass
             return
+        
         
         state = False
         for log in receipt['logs']:
@@ -163,41 +167,60 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                 blockNumber = receipt.blockNumber
                 from_address=  Contract.to_check_sum_address(log.topics[1].hex())
                 to_address = Contract.to_check_sum_address(log.topics[2].hex())
-
+                print(f'{to_address} == {Contract.to_check_sum_address( get_deposit_address(db) )}')
                 if to_address != Contract.to_check_sum_address( get_deposit_address(db) ):
                     # set log
+                    print('to_address is not match')
                     break
 
-                value = int(log.data, 16)
+                value = round(int(log.data, 16) / 10 **18, 5)
                 state = True
 
-                print(blockNumber,from_address, to_address, value)
+                print( f'{blockNumber}-{from_address}-{to_address}-{value}')
                 
                 break
             
         if state == False:
+            print('state == False')
             # send to notification
             pass
             return
         
         for request in deposit_requests:
+            print(f'{round(request.value, 2)}-{round(value, 2)} -{round(request.value, 2) == round(value, 2)}')
             if round(request.value, 2) == round(value, 2):
+                print('saveing in tabel')
                 data = {
                     'tx_hash': tx_hash,
                     'request_id': request.request_id,
                     'user_id': user_id,
                     'origin_address': from_address ,
                     'destination_address': to_address,
-                    'error_message': None,
+                    'error_message': '',
                     'status': DepositHistoryStatus.RECEIVED,
                     'value': value,
                     'timestamp': datetime.now()
                 }
                 
-                create_deposit_history(DepositHistoryModelForDataBase(**data), db)
+                try:
+                    
+                    increase_balance(request.user_id, value, db, commit=False)
+                    create_deposit_history(DepositHistoryModelForDataBase(**data), db, commit=False)
+                    update_status_by_request_id(request.request_id, DepositHistoryStatus.RECEIVED, db, commit=False)
+                    db.commit()
+                
+                except Exception as e :
+
+                    db.rollback()
+                    raise e
+
+                finally:
+                    db.close()
+
 
             else:
                 # send notif
+                print('not saved')
                 pass
 
 
