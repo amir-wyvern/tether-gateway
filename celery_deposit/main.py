@@ -2,30 +2,31 @@ import sys
 
 sys.path.append('../')
 
-from celery_tasks.tasks import DepositCeleryTask
-from celery_tasks.utils import create_worker_from
-
-from web3 import Web3
-from web3.exceptions import  TransactionNotFound
-
-# from datetime import datetime ,timezone
-from db import db_config
-from db.database import get_db
-# from fastapi import Depends
-import json
-from dotenv import dotenv_values
-
 from db.database import get_db
 from db.db_user import increase_balance
-from db.db_deposit_request import get_request_deposit_by_user, update_status_by_request_id
+from db import db_config
+from db.db_deposit_request import (
+    get_request_deposit_by_user,
+    update_status_by_request_id,
+    get_request_deposit_by_status
+)
+from db.db_main_account import get_deposit_address
+from db.models import DepositRequestStatus, DepositHistoryStatus
 from db.db_deposit_history import (
     create_deposit_history,
     get_history_deposit_by_tx_hash
 )
-from db.db_main_account import get_deposit_address
-from db.models import DepositRequestStatus, DepositHistoryStatus
+from celery_tasks.tasks import DepositCeleryTask
+from celery_tasks.utils import create_worker_from
 from schemas import DepositHistoryModelForDataBase
-from datetime import datetime
+
+from web3 import Web3
+from web3.exceptions import  TransactionNotFound
+
+import json
+from dotenv import dotenv_values
+from datetime import datetime, timedelta
+
 
 
 config = dotenv_values("celery_deposit/.env")
@@ -114,6 +115,12 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
 
     def run(self, payload):
         
+        print(f'received {payload}')
+
+        if payload == 'check_deposit_request':
+            self.check_deposit_requests()
+            return
+
         user_id = payload["user_id"]
         tx_hash = payload["tx_hash"]
 
@@ -127,13 +134,21 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
             pass
             return
         
-        deposit_requests = get_request_deposit_by_user(user_id, db, DepositRequestStatus.WAITING)
+        no_check_deposit_requests = get_request_deposit_by_user(user_id, db, DepositRequestStatus.WAITING)
+
+        deposit_requests = []
+        for request in no_check_deposit_requests:
+            if datetime.now() - request.timestamp < timedelta(hours=1):
+                deposit_requests.append(request)
+
         print( 'deposit_requests: ', deposit_requests)
         if deposit_requests == []:
             # send to notifaction
             pass
             return
         
+
+
         old_history_deposit = get_history_deposit_by_tx_hash(tx_hash, db)
         print('old_history_deposit:',old_history_deposit)
         if old_history_deposit is not None and old_history_deposit.status == DepositHistoryStatus.RECEIVED:
@@ -223,13 +238,44 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                 print('not saved')
                 pass
 
+    def check_deposit_requests(self):
+
+        db = get_db().__next__()
+
+        ls_requests = get_request_deposit_by_status(DepositRequestStatus.WAITING, db)
+        
+        try:
+            for request in ls_requests:
+
+                if datetime.now() - request.timestamp > timedelta(hours=1):
+                    update_status_by_request_id(request.request_id, DepositHistoryStatus.FAILED, db, commit=False)
+            
+            db.commit()
+
+        except Exception as e :
+            
+            db.rollback()
+            raise e
+
+        finally:
+            db.close()
 
 
 # create celery app
 app, _ = create_worker_from(DepositCeleryTaskImpl)
 # _, notifaction_worker = create_worker_from(NotificationCeleryTask)
 
+beat_schedule = {
+    'check_deposit_requests_every_five_minute':{
+        'task': 'Deposit_celery_task',
+        'schedule': timedelta(seconds=3),
+        'args': ('check_deposit_request',)
+    }
+}
+
+app.conf.beat_schedule = beat_schedule
 # start worker
 if __name__ == '__main__':
+    
     app.worker_main()
 
