@@ -22,6 +22,10 @@ def create_request(user_id ,value, destination_address, db: Session):
 
     return request_deposit
 
+def get_request_deposit_by_status(status: DepositRequestStatus, db:Session):
+
+    return db.query(DdDepositRequest).filter(DdDepositRequest.status == status ).all()
+
 
 def get_request_deposit_by_id(request_id, db:Session, mode: Union[DepositRequestStatus, None]= None):
 
