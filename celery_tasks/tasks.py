@@ -39,22 +39,3 @@ class ContractCeleryTask(celery.Task):
         place holder method
         """
         pass
-
-class NotificationCeleryTask(celery.Task):
-    name = 'notification_celery_task'
-
-    def run(self, payload):
-        """
-        place holder method
-        """
-        pass
-
-
-class DivisionCeleryTask(celery.Task):
-    name = 'division_celery_task'
-
-    def run(self, payload):
-        """
-        place holder method
-        """
-        pass
