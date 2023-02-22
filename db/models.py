@@ -33,6 +33,7 @@ class DbUser(Base):
     photo = Column(VARCHAR(200), nullable=True, unique=True)
     number_of_invited = Column(Integer, default=0, nullable=False) # CheckConstraint('number_of_invited >= 0')
     bonus_of_invited = Column(Float(15,6), default=0.0, nullable=False) # CheckConstraint('bonus_of_invited >= 0.0')
+    total_fee_paid: Column(Float(15,6), default=0.0, nullable=False) 
     register_time = Column(DateTime, nullable=False)
     first_deposit_value = Column(Integer) #  CheckConstraint('first_deposit_value >= 0')
 
@@ -90,6 +91,7 @@ class DbWithdrawHistory(Base):
 
     tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    from_address = Column(VARCHAR(42), index=True, nullable=True)
     to_address = Column(VARCHAR(42), index=True, nullable=False)
     error_message = Column(VARCHAR(400), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
