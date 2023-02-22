@@ -162,8 +162,8 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
             logger.info(f'deposit is locked [user_id: {user_id} -tx_hash: {tx_hash}]')
             return
             
-        logger.debug(f'db_deposit_request > get_request_deposit_by_user > request  [user_id: {user_id} -state: {DepositRequestStatus.WAITING}]')
-        no_check_deposit_requests = get_request_deposit_by_user(user_id, db, DepositRequestStatus.WAITING)
+        logger.debug(f'db_deposit_request > get_request_deposit_by_user > request  [user_id: {user_id} -state: {DepositRequestStatus.PROCESSING}]')
+        no_check_deposit_requests = get_request_deposit_by_user(user_id, db, DepositRequestStatus.PROCESSING)
         logger.debug(f'db_deposit_request > get_request_deposit_by_user > response [user_id: {user_id} -result:{len(no_check_deposit_requests) * "*"}')
 
         deposit_requests = []
@@ -180,7 +180,7 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         old_tx_hash = get_history_deposit_by_tx_hash(tx_hash, db)
         logger.debug(f'db_deposit_request > get_history_deposit_by_tx_hash > response [user_id: {user_id} -tx_hash: {tx_hash} -result: {old_tx_hash is not None}')
         
-        if old_tx_hash is not None and old_tx_hash.status == DepositHistoryStatus.RECEIVED:
+        if old_tx_hash is not None and old_tx_hash.status == DepositHistoryStatus.SUCCESS:
             # send to notifaction
             logger.info(f'The tx hash is aleady registerd [user_id: {user_id} -tx_hash: {tx_hash}]')
             return
@@ -232,10 +232,10 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                     'tx_hash': tx_hash,
                     'request_id': request.request_id,
                     'user_id': user_id,
-                    'origin_address': from_address ,
-                    'destination_address': to_address,
+                    'from_address': from_address ,
+                    'to_address': to_address,
                     'error_message': '',
-                    'status': DepositHistoryStatus.RECEIVED,
+                    'status': DepositHistoryStatus.SUCCESS,
                     'value': value,
                     'timestamp': datetime.now()
                 }
@@ -245,7 +245,7 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                 try:
                     increase_balance(request.user_id, value, db, commit=False)
                     create_deposit_history(DepositHistoryModelForDataBase(**data), db, commit=False)
-                    update_status_by_request_id(request.request_id, DepositHistoryStatus.RECEIVED, db, commit=False)
+                    update_status_by_request_id(request.request_id, DepositHistoryStatus.SUCCESS, db, commit=False)
                     db.commit()
                     deposit_status = True
 
@@ -267,9 +267,9 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
 
         db = get_db().__next__()
         
-        logger.debug(f'db_deposit_request > get_request_deposit_by_status > request [status: {DepositRequestStatus.WAITING}]')
-        ls_requests = get_request_deposit_by_status(DepositRequestStatus.WAITING, db)
-        logger.debug(f'db_deposit_request > get_request_deposit_by_status > response [status: {DepositRequestStatus.WAITING} -count: {len(ls_requests)}]')
+        logger.debug(f'db_deposit_request > get_request_deposit_by_status > request [status: {DepositRequestStatus.PROCESSING}]')
+        ls_requests = get_request_deposit_by_status(DepositRequestStatus.PROCESSING, db)
+        logger.debug(f'db_deposit_request > get_request_deposit_by_status > response [status: {DepositRequestStatus.PROCESSING} -count: {len(ls_requests)}]')
         
         try:
             for request in ls_requests:
