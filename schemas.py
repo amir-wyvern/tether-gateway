@@ -154,18 +154,32 @@ class HTTPError(BaseModel):
         
 
 
-
 # Withdraw modeles
 
-class WithdrawRequestStatus(int, Enum):
-    WAITING = 1
-    RECEIVED = 2
-    FAILED = 3
+class WithdrawHistoryStatus(int, Enum):
+    PROCESSING = 1
+    SUCCESS = 2
+    FAILED = 2
+
+
+class WithdrawHistoryModelForDataBase(BaseModel):
+
+    tx_hash: Union[str, None]
+    user_id: int
+    from_address: Union[str, None] 
+    to_address: str
+    value: float
+    status: WithdrawHistoryStatus
+    error_message: Union[str, None]
+    withdraw_fee_percentage: float
+    withdraw_fee_value: float
+    timestamp: datetime
+
 
 class WithdrawRequest(BaseModel):
 
     value: float = Field(gt=0)
-    destination_address: str = Field(min_length=1, max_length=100)
+    to_address: str = Field(min_length=1, max_length=100)
 
 class WithdrawRequestResponse(BaseModel):
     
@@ -207,8 +221,8 @@ class TransferRequestResponse(BaseModel):
 
 class TransferHistoryModel(BaseModel):
 
-    origin_address: str
-    destination_address: str
+    from_address: str
+    to_address: str
     value: float
     tx_hash: str
     timestamp: int
@@ -226,24 +240,25 @@ class TransferHistoryRequest(BaseModel):
 
 # Deposit
 class DepositHistoryStatus(int, Enum):
-    RECEIVED = 2
-    FAILED = 3
+    SUCCESS = 1
+    FAILED = 2
 
 class DepositRequestStatus(int, Enum):
-    WAITING = 1
-    RECEIVED = 2
-    FAILED = 3
+    PROCESSING = 1
+    DONE = 2
+
+
 
 class DepositHistoryModelForDataBase(BaseModel):
 
     tx_hash: Union[str, None]
     request_id: int
     user_id: int
-    origin_address: Union[str, None] 
-    destination_address: str
-    error_message: Union[str, None]
-    status: DepositHistoryStatus
+    from_address: Union[str, None] 
+    to_address: str
     value: float
+    status: DepositHistoryStatus
+    error_message: Union[str, None]
     timestamp: datetime
 
 class DepositRequestResponse(BaseModel):
@@ -254,8 +269,8 @@ class DepositRequestResponse(BaseModel):
 class DepositRequest(BaseModel):
 
     value: float = Field(gt=0)
-    # destination_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
-    # origin_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
+    # to_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
+    # from_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
 
 class DepositConfirmation(BaseModel):
 
@@ -280,7 +295,7 @@ class DepositHistoryResponse(BaseModel):
 class ReceivedTx(BaseModel):
 
     tx_hash: str = Field(min_length=1, max_length=100)
-    origin_address: str = Field(min_length=1, max_length=100)
+    from_address: str = Field(min_length=1, max_length=100)
     value: float  = Field(gt= 0)
     timestamp: datetime
 
