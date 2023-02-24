@@ -110,13 +110,12 @@ def user_register_by_phonenumber(user: UserRegisterByPhoneNumber, db: Session=De
     # if user.phone_number != token_info.data:
     #     raise HTTPException(status_code=401, detail={'internal_code':1013, 'message':'The phone number has not been verified'})
 
-    phone_number = str(user.country_code) + str(user.phone_number_without_country_code)
-    data = db_user.check_exist_user(['email', 'tel_id'] ,user, db) 
+    data = db_user.check_exist_user(['email', 'tel_id', 'phone_number'] ,user, db) 
 
     if data is not None and data.tel_id == user.tel_id:
         raise HTTPException(status_code=403, detail={'internal_code':1005, 'message':'The user already exists!'})
 
-    if data is not None and data.phone_number == phone_number:
+    if data is not None and data.phone_number == user.phone_number:
         raise HTTPException(status_code=403, detail={'internal_code':1006, 'message':'The phone number already exists!'})
 
     if data is not None and data.email == user.email:
