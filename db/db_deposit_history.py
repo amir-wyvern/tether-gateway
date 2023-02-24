@@ -9,8 +9,8 @@ def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session,
         request_id= request.request_id,
         tx_hash= request.tx_hash,
         user_id= request.user_id,
-        origin_address= request.origin_address,
-        destination_address= request.destination_address,
+        from_address= request.from_address,
+        to_address= request.to_address,
         error_message= request.error_message,
         status= request.status,
         value= request.value,
@@ -32,10 +32,10 @@ def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session,
 # def get_history_deposit_by_address(address, db:Session, mode: Union[DepositHistoryStatus, None]= None):
 
 #     if mode == None:
-#         return db.query(DbDepositHistory).filter(DbDepositHistory.destination_address == address ).all()
+#         return db.query(DbDepositHistory).filter(DbDepositHistory.to_address == address ).all()
     
 #     else:
-#         return db.query(DbDepositHistory).filter(or_(DbDepositHistory.destination_address == address, DbDepositHistory.status == mode) ).all()
+#         return db.query(DbDepositHistory).filter(or_(DbDepositHistory.to_address == address, DbDepositHistory.status == mode) ).all()
 
 def get_history_deposit_by_tx_hash(tx_hash, db:Session):
 
