@@ -1,7 +1,7 @@
 from sqlalchemy.orm.session import Session
 from schemas import UpdateConfig
 from db.models import DbConfig
-
+import logging
 
 def init_table(db:Session):
 
@@ -15,19 +15,6 @@ def init_table(db:Session):
         return config
 
 def get_config(db:Session):
+    resp = db.query(DbConfig).filter(DbConfig.index == 1).first()
+    return resp
 
-    return db.query(DbConfig).filter(DbConfig.index == 1).first()
-
-def update_config(request:UpdateConfig , db:Session):
-
-    user = db.query(DbConfig).filter(DbConfig.user_id == user_id)
-    user.update({
-        DbConfig.name: request.name,
-        DbConfig.lastname: request.lastname,
-        DbConfig.photo: request.photo,
-        DbConfig.phone_number: request.phone_number,
-        DbConfig.email: request.email,
-    })
-    db.commit()
-
-    return True
