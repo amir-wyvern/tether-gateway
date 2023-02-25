@@ -4,12 +4,12 @@ from datetime import datetime
 from typing import Union
 from sqlalchemy import or_
 
-def create_request(user_id ,value, destination_address, db: Session):
+def create_request(user_id, value, to_address, db: Session):
     
     request_deposit = DdDepositRequest(
         user_id= user_id,
-        # origin_address= request.origin_address,
-        destination_address= destination_address,
+        # from_address= request.from_address,
+        to_address= to_address,
         value= value,
         status= DepositRequestStatus.WAITING,
         error_message=None,
@@ -23,7 +23,6 @@ def create_request(user_id ,value, destination_address, db: Session):
     return request_deposit
 
 def get_request_deposit_by_status(status: DepositRequestStatus, db:Session):
-
     return db.query(DdDepositRequest).filter(DdDepositRequest.status == status ).all()
 
 
@@ -35,10 +34,10 @@ def get_request_deposit_by_id(request_id, db:Session, mode: Union[DepositRequest
 def get_request_deposit_by_address(address, db:Session, mode: Union[DepositRequestStatus, None]= None):
 
     if mode == None:
-        return db.query(DdDepositRequest).filter(DdDepositRequest.destination_address == address ).all()
+        return db.query(DdDepositRequest).filter(DdDepositRequest.to_address == address ).all()
     
     else:
-        return db.query(DdDepositRequest).filter(or_(DdDepositRequest.destination_address == address, DdDepositRequest.status == mode) ).all()
+        return db.query(DdDepositRequest).filter(or_(DdDepositRequest.to_address == address, DdDepositRequest.status == mode) ).all()
 
 
 def get_request_deposit_by_user(user_id, db:Session, mode: Union[DepositRequestStatus, None]= None):
@@ -56,12 +55,11 @@ def update_status_by_request_id(request_id, new_status: DepositRequestStatus, db
     obj.update({
         DdDepositRequest.status: new_status
     })
-
     if error_message: 
         obj.update({
             DdDepositRequest.error_message: error_message
         })
 
     if commit:
-        print(db.commit())
-
+        
+        db.commit()
