@@ -2,7 +2,7 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy import or_
 from schemas import (
     UserRegisterByEmail,
-    UserRegister,
+    UserRegisterForDataBase,
     UserRegisterByPhoneNumber,
     UserUpdateProfile,
     UpdatePassword
@@ -12,7 +12,7 @@ from db.hash import Hash
 from datetime import datetime
 
 
-def create_user(request: UserRegister, db: Session):
+def create_user(request: UserRegisterForDataBase, db: Session):
 
     password_hash = Hash.sha3_256(request.password)  
     relferal_link = Hash.generate_referal_link()
@@ -38,7 +38,7 @@ def create_user(request: UserRegister, db: Session):
     db.refresh(user)
     return user
 
-def check_exist_user(items ,user:UserRegister, db:Session):
+def check_exist_user(items ,user:UserRegisterForDataBase, db:Session):
 
     ls = []
     for item in items:
@@ -102,6 +102,17 @@ def increase_balance(user_id, amount, db:Session, commit=True):
     user = db.query(DbUser).filter(DbUser.user_id == user_id)
     user.update({
         DbUser.balance: round(float(user.first().balance) + amount, 6),
+    })
+
+    if commit:
+        db.commit()
+        return True
+
+def decrease_balance(user_id, amount, db:Session, commit=True):
+
+    user = db.query(DbUser).filter(DbUser.user_id == user_id)
+    user.update({
+        DbUser.balance: round(float(user.first().balance) - amount, 6),
     })
 
     if commit:
