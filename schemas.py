@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
 import re
@@ -50,16 +50,20 @@ class UserAuthResponse(BaseModel):
 # user Login or Register
 class PhoneNumberStr(str):
     @classmethod
+    def __modify_schema__(cls, field_schema: Dict[str, Any]) -> None:
+        field_schema.update(type='string', format='phonenumber', example='+98-9151234567')
+
+    @classmethod
     def __get_validators__(cls):
         yield cls.validate
     
     @classmethod
     def validate(cls, v):
-        if not re.match(r"^\+?[0-9]{3}-?[0-9]{6,12}$", v):
+        if not re.match(r"^\+\d{1,3}-\d{6,12}$", v):
             raise ValueError("Not a valid phone number")
         return v
-
-class UserRegister(BaseModel):
+    
+class UserRegisterForDataBase(BaseModel):
 
     tel_id: Optional[int] = Field(ge=0, default= None)
     phone_number: Optional[PhoneNumberStr] = None
@@ -73,8 +77,8 @@ class UserRegister(BaseModel):
 class UserRegisterByEmail(BaseModel):
 
     tel_id: Optional[int] = Field(ge=0, default= None)
-    phone_number: Optional[PhoneNumberStr] = None
     email: EmailStr
+    phone_number: Optional[PhoneNumberStr] = None
     password: str = Field(min_length=1, max_length=200)
     referal_link: Optional[str] = Field(min_length=1, max_length=50, default=None)
     name: str = Field(min_length=1, max_length=100)
@@ -83,8 +87,18 @@ class UserRegisterByEmail(BaseModel):
 class UserRegisterByPhoneNumber(BaseModel):
 
     tel_id: Optional[int] = Field(ge=0, default= None)
+    phone_number: PhoneNumberStr 
     email: Optional[EmailStr] = None 
-    phone_number: PhoneNumberStr
+    password: str = Field(min_length=1, max_length=200)
+    referal_link: Optional[str] = Field(min_length=1, max_length=50, default=None)
+    name: str = Field(min_length=1, max_length=100)
+    lastname: str = Field(min_length=1, max_length=100)
+
+class UserRegisterByPhoneNumberForDataBase(BaseModel):
+
+    tel_id: Optional[int] = Field(ge=0, default= None)
+    phone_number: int = Field(ge=0, le=999)
+    email: Optional[EmailStr] = None 
     password: str = Field(min_length=1, max_length=200)
     referal_link: Optional[str] = Field(min_length=1, max_length=50, default=None)
     name: str = Field(min_length=1, max_length=100)
@@ -118,7 +132,7 @@ class UserLogin(BaseModel):
 class UserDisplay(BaseModel):
 
     tel_id: Union[None, int]
-    phone_number: str
+    phone_number: PhoneNumberStr
     referal_link: str 
     email: Union[None, EmailStr ] = Field(default=None)
     name: str
@@ -164,15 +178,16 @@ class WithdrawHistoryStatus(int, Enum):
 
 class WithdrawHistoryModelForDataBase(BaseModel):
 
+    request_id: str
     tx_hash: Union[str, None]
     user_id: int
-    from_address: Union[str, None] 
+    from_address: str
     to_address: str
     value: float
     status: WithdrawHistoryStatus
     error_message: Union[str, None]
-    withdraw_fee_percentage: float
-    withdraw_fee_value: float
+    withdraw_fee_percentage: Union[float, None]
+    withdraw_fee_value: Union[float, None]
     timestamp: datetime
 
 
@@ -244,8 +259,9 @@ class DepositHistoryStatus(int, Enum):
     FAILED = 2
 
 class DepositRequestStatus(int, Enum):
-    PROCESSING = 1
-    DONE = 2
+    WAITING = 1
+    SUCCESS = 2
+    EXPIRE = 3
 
 
 
