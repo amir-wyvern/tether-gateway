@@ -13,7 +13,7 @@ from sqlalchemy import (
 from schemas import (
     DepositHistoryStatus,
     DepositRequestStatus,
-    WithdrawRequestStatus
+    WithdrawHistoryStatus
 )
 
 class DbUser(Base):
@@ -33,7 +33,7 @@ class DbUser(Base):
     photo = Column(VARCHAR(200), nullable=True, unique=True)
     number_of_invited = Column(Integer, default=0, nullable=False) # CheckConstraint('number_of_invited >= 0')
     bonus_of_invited = Column(Float(15,6), default=0.0, nullable=False) # CheckConstraint('bonus_of_invited >= 0.0')
-    total_fee_paid: Column(Float(15,6), default=0.0, nullable=False) 
+    total_fee_paid= Column(Float(15,6), default=0.0, nullable=False) 
     register_time = Column(DateTime, nullable=False)
     first_deposit_value = Column(Integer) #  CheckConstraint('first_deposit_value >= 0')
 
@@ -49,7 +49,7 @@ class DbMainAccounts(Base):
     index = Column(Integer, primary_key=True)
     deposit_address = Column(VARCHAR(42), nullable=False)
     withdraw_address = Column(VARCHAR(42), nullable=False)
-    p_withdraw = Column(VARCHAR(200), nullable=False)
+    p_withdraw = Column(VARCHAR(1000), nullable=False)
 
 
 class DbConfig(Base):
@@ -89,12 +89,14 @@ class DbTransferHistory(Base):
 class DbWithdrawHistory(Base):
     __tablename__ = 'withdraw_history'
 
-    tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
+    request_id = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
+    tx_hash = Column(VARCHAR(100), unique=True, index=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
-    from_address = Column(VARCHAR(42), index=True, nullable=True)
+    from_address = Column(VARCHAR(42), index=True, nullable=False)
     to_address = Column(VARCHAR(42), index=True, nullable=False)
     error_message = Column(VARCHAR(400), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+    status = Column(Enum(WithdrawHistoryStatus), nullable=False) # CheckConstraint('value > 0')
     withdraw_fee_percentage = Column(Float(9,6), nullable=False) # CheckConstraint('transfer_fee_percentage > 0')
     withdraw_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('withdraw_fee_value > 0')
     timestamp = Column(DateTime, nullable=False)
