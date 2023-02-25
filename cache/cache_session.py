@@ -8,7 +8,7 @@ def get_auth_code_by_session(token: str, db: redis.Redis):
     return db.get(token)
 
 def set_lock_for_user(user_id, db):
-    return db.set(f'lock:user:{user_id}', 'True', ex= 600)
+    return db.set(f'lock:user:{user_id}', 'True', ex= 300)
 
 def unlock_user(user_id, db):
     return db.delete(f'lock:user:{user_id}')
