@@ -10,7 +10,7 @@ def create_request(user_id ,request: WithdrawRequest, db: Session):
     
     request_withdraw = DdWithdrawRequest(
         user_id= user_id,
-        destination_address= request.destination_address,
+        to_address= request.to_address,
         value= request.value,
         status= WithdrawRequestStatus.WAITING,
         error_message= None,
@@ -29,7 +29,7 @@ def get_request_withdraw_by_id(request_id, db:Session):
 
 
 def get_request_withdraw_by_address(address, db:Session):
-    return db.query(DdWithdrawRequest).filter(DdWithdrawRequest.destination_address == address ).all()
+    return db.query(DdWithdrawRequest).filter(DdWithdrawRequest.to_address == address ).all()
 
 
 def get_request_withdraw_by_user(user_id, db:Session):
