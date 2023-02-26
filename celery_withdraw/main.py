@@ -29,7 +29,7 @@ from datetime import datetime
 from getpass import getpass
 import logging 
 
-config = dotenv_values("celery_withdraw/.env")
+ENV = dotenv_values("celery_withdraw/.env")
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -70,7 +70,11 @@ def safe_financial(func):
         resp = set_lock_for_user(user_id, db)
         logging.debug(f'cache_session > set_lock_for_user > response [request_id: {request_id} -user_id: {user_id} -result: {resp}]')
 
-        func(*args, **kwargs)
+        try:
+            func(*args, **kwargs)
+
+        except Exception as e:
+            logger.error(f'Exception [user_id: {user_id} -exception: {e}]')
 
         resp = unlock_user(user_id, db)
         logging.debug(f'cache_session > unlock_user > response [request_id: {request_id} -user_id: {user_id} -result: {resp}]')
@@ -83,11 +87,11 @@ class Contract:
     def __init__(self) -> None:
 
         logger.debug('Contract class is initialing...')
-        self.w3 = Web3(Web3.HTTPProvider(config["PROVIDER_1"]))
-        abi = config["ABI"]
+        self.w3 = Web3(Web3.HTTPProvider(ENV["PROVIDER_1"]))
+        abi = ENV["ABI"]
         abi = abi.replace('\'', '"')
         abi = json.loads(abi)
-        self.tether = self.w3.eth.contract(address= config["CONTRACT"], abi= abi)
+        self.tether = self.w3.eth.contract(address= ENV["CONTRACT"], abi= abi)
         self.decimals = self.tether.functions.decimals().call()
         
         logger.debug('Contract class is initialed')
@@ -105,7 +109,9 @@ class Contract:
                 gas_price_wei = self.w3.eth.gasPrice
                 chain_id = self.w3.eth.chain_id
                 
-                tx = self.w3.functions.transfer(to_address, value * 10** self.decimals).buildTransaction({
+                value_with_deciamls = int(value * 10** self.decimals)
+
+                tx = self.tether.functions.transfer(to_address, value_with_deciamls).buildTransaction({
                     'from': account.address,
                     'nonce': nonce,
                     'gasPrice': gas_price_wei,
@@ -119,11 +125,11 @@ class Contract:
                 logger.debug(f'Contract > send_tx > buildTransaction [request_id: {request_id} -tx: {tx}]')
 
                 signed_tx = account.sign_transaction(tx)
-                tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction).hex()
                 logger.debug(f'Contract > send_tx > send_raw_transaction > response [request_id: {request_id} -tx_hash: {tx_hash}]')
-                
-                break
 
+                return self.wait_for_tx_receipt(request_id, tx_hash)
+                
             except Exception as e:
                 
                 logger.debug(f'Contract > send_tx > Exception [request_id: {request_id} -exception: {e}]')
@@ -133,7 +139,6 @@ class Contract:
                 
                 failed_count_of_req += 1
                 
-            return self.wait_for_tx_receipt(request_id, tx_hash)
 
     def wait_for_tx_receipt(self, request_id, tx_hash):
 
@@ -169,7 +174,7 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
         try :
             db = get_db().__next__()
             encryted_private_key = get_p_withdraw(db)
-            decrypt_private_key(encryted_private_key, self.pk_password, config['PRIVATE_KEY_SALT'])
+            decrypt_private_key(encryted_private_key, self.pk_password, ENV['PRIVATE_KEY_SALT'])
             logger.debug('password is correct')
         except:
             logger.debug('password is not correct!')
@@ -212,11 +217,12 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
         user_data = get_user(user_id, db)
         logger.debug(f'db_user > get_user > response [request_id: {request_id} -result: {user_data is not None}]')
         
-        balance = user_data.balance
+        balance = float(user_data.balance)
 
-        withdraw_fee = config.withdraw_fee_percentage / 100 * value 
+        withdraw_fee = float(config.withdraw_fee_percentage) / 100 * value 
+        min_user_balance = float(config.min_user_balance)
 
-        if ( config.min_user_balance + withdraw_fee + value ) > balance :
+        if ( min_user_balance + withdraw_fee + value ) > balance :
             logger.info(f'The user does not have enough balance to withdraw the desired amount ( config.min_user_balance + withdraw_fee + value ) > balance [request_id: {request_id}]')
             data = {
                 'request_id': request_id,
@@ -235,7 +241,7 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
         encryted_private_key = get_p_withdraw(db)
         logger.debug(f'db_main_account > get_p_withdraw > response [request_id: {request_id} -result: {encryted_private_key is not None}]')
 
-        private_key = decrypt_private_key(encryted_private_key, self.pk_password, config['PRIVATE_KEY_SALT'])
+        private_key = decrypt_private_key(encryted_private_key, self.pk_password, ENV['PRIVATE_KEY_SALT'])
 
         tx_hash, status, err_msg = self.contract.send_tx(request_id, value, to_address, private_key)
 
@@ -271,14 +277,14 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
         try:
             
             if tx_hash is not None and status == False:
-                data.upadte({'status': WithdrawHistoryStatus.FAILED})
-                data.upadte({'error_message': err_msg})
+                data.update({'status': WithdrawHistoryStatus.FAILED})
+                data.update({'error_message': err_msg})
                 
                 logger.info(f'Failed Tx  [request_id: {request_id} -error_message: {err_msg}]')
                 create_withdraw_history(WithdrawHistoryModelForDataBase(**data), db)
                 return
     
-            data.upadte({'status': WithdrawHistoryStatus.SUCCESS})
+            data.update({'status': WithdrawHistoryStatus.SUCCESS})
             decrease_balance(user_id, value + withdraw_fee, db, commit=False)
             create_withdraw_history(WithdrawHistoryModelForDataBase(**data), db, commit=False)
             db.commit()
