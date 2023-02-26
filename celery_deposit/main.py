@@ -278,7 +278,7 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                     update_status_by_request_id(request.request_id, DepositRequestStatus.SUCCESS, db, commit=False)
                     db.commit()
                     deposit_status = True
-                    logger.debug(f'Saved a transaction in deposit history DB [user_id: {user_id} -tx_hash: {tx_hash}]')
+                    logger.info(f'Saved a transaction in deposit history DB [user_id: {user_id} -tx_hash: {tx_hash}]')
 
 
                 except Exception as e :
