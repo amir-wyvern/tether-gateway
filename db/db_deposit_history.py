@@ -6,7 +6,7 @@ from schemas import (
     DepositHistoryModelForUpdateDataBase
 )
 from typing import Union
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 
 def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session, commit=True):
@@ -39,7 +39,7 @@ def get_deposit_history_by_tx_hash(tx_hash, db:Session, status: Union[DepositHis
         return db.query(DbDepositHistory).filter(DbDepositHistory.tx_hash == tx_hash ).all()
     
     else:
-        return db.query(DbDepositHistory).filter(or_(DbDepositHistory.tx_hash == tx_hash, DbDepositHistory.status == status) ).all()
+        return db.query(DbDepositHistory).filter(and_(DbDepositHistory.tx_hash == tx_hash, DbDepositHistory.status == status) ).all()
 
 
 def get_deposit_history_by_status(status: DepositHistoryStatus, db:Session):
@@ -52,7 +52,24 @@ def get_deposit_history_by_user_id(user_id, db:Session, status: Union[DepositHis
         return db.query(DbDepositHistory).filter(DbDepositHistory.user_id == user_id).all()
     
     else:
-        return db.query(DbDepositHistory).filter(or_(DbDepositHistory.user_id == user_id, DbDepositHistory.status == status)).all()
+        return db.query(DbDepositHistory).filter(and_(DbDepositHistory.user_id == user_id, DbDepositHistory.status == status)).all()
+    
+def get_deposit_history_by_time(user_id, start_time, end_time, db:Session, status: Union[DepositHistoryStatus, None]= None):
+
+    if status == None:
+        return db.query(DbDepositHistory).filter(and_(
+            DbDepositHistory.user_id == user_id, 
+            DbDepositHistory.request_time >= start_time, 
+            DbDepositHistory.request_time <= end_time
+            )).all()
+    
+    else:
+        return db.query(DbDepositHistory).filter(and_(
+            DbDepositHistory.user_id == user_id, 
+            DbDepositHistory.request_time >= start_time, 
+            DbDepositHistory.request_time <= end_time,
+            DbDepositHistory.status == status
+            )).all()
 
 
 def update_deposit_history_by_request_id(request_id, new_data: DepositHistoryModelForUpdateDataBase, db: Session, commit=True):
