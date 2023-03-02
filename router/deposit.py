@@ -11,10 +11,11 @@ from schemas import (
     DepositConfirmation,
     DepositRequestResponse,
     DepositHistoryResponse,
-    DepositHistoryRequest
+    DepositHistoryModelForDataBase,
+    DepositHistoryStatus
 )
 
-from db import db_deposit_request, db_main_account
+from db import db_main_account, db_deposit_history
 from db.database import get_db
 
 from celery_tasks.tasks import DepositCeleryTask 
@@ -23,7 +24,8 @@ from sqlalchemy.orm.session import Session
 from auth.oauth2 import ( 
     get_current_user
 )
-
+from uuid import uuid4
+from datetime import datetime
 
 router = APIRouter(prefix='/deposit', tags=['Deposit'])
 
@@ -34,7 +36,21 @@ def deposit_request(request: DepositRequest, user_id: int=Depends(get_current_us
 
     deposit_address = db_main_account.get_deposit_address(db)
     
-    resp = db_deposit_request.create_request(user_id, request.value, deposit_address, db)
+    request_id = uuid4().hex[:12]
+    request_data = {
+        'request_id': request_id,
+        'tx_hash': None,
+        'user_id': user_id,
+        'from_address': None,
+        'to_address': deposit_address,
+        'value': request.value,
+        'status': DepositHistoryStatus.WAITING,
+        'error_message': None,
+        'request_time': datetime.now(),
+        'processingـcompletionـtime': None
+    }
+
+    resp = db_deposit_history.create_deposit_history(DepositHistoryModelForDataBase(**request_data), db)
 
     if resp:
         return JSONResponse(status_code=200, content={'request_id': resp.request_id ,'deposit_address': deposit_address})
@@ -52,14 +68,16 @@ def deposit_comfirmation(request: DepositConfirmation, user_id: int=Depends(get_
         'user_id': user_id,
         'tx_hash': request.tx_hash
     }
-
+    
     deposit_worker.apply_async(args=(payload, )) 
 
     return JSONResponse(status_code=200, content={'message':'the request is proccessing'})
 
 
 @router.get('/history', response_model=DepositHistoryResponse, responses={404:{'model':HTTPError}})
-def deposit_comfirmation(offset: int, count: int, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
+def deposit_comfirmation(start_time: int, end_time: int, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
-    return JSONResponse(status_code=200, content={'txs':[] })
+    history = db_deposit_history.get_deposit_history_by_time(user_id, start_time, end_time, db)
+
+    return JSONResponse(status_code=200, content={'txs': history })
 
