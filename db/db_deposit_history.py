@@ -1,6 +1,12 @@
 from sqlalchemy.orm.session import Session
 from db.models import DbDepositHistory
-from schemas import DepositHistoryModelForDataBase
+from schemas import (
+    DepositHistoryModelForDataBase,
+    DepositHistoryStatus,
+    DepositHistoryModelForUpdateDataBase
+)
+from typing import Union
+from sqlalchemy import or_
 
 
 def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session, commit=True):
@@ -14,8 +20,10 @@ def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session,
         error_message= request.error_message,
         status= request.status,
         value= request.value,
-        timestamp= request.timestamp
+        request_time= request.request_time,
+        processingـcompletionـtime= request.processingـcompletionـtime
     )
+
     db.add(deposit_history)
 
     if commit:
@@ -25,30 +33,40 @@ def create_deposit_history(request: DepositHistoryModelForDataBase, db: Session,
         return deposit_history
 
 
-# def get_request_deposit_by_id(request_id, db:Session, mode: Union[DepositRequestStatus, None]= None):
+def get_deposit_history_by_tx_hash(tx_hash, db:Session, status: Union[DepositHistoryStatus, None]= None):
 
-#     return db.query(DdDepositRequest).filter(DdDepositRequest.request_id == request_id ).first()
-
-# def get_history_deposit_by_address(address, db:Session, mode: Union[DepositHistoryStatus, None]= None):
-
-#     if mode == None:
-#         return db.query(DbDepositHistory).filter(DbDepositHistory.to_address == address ).all()
+    if status == None:
+        return db.query(DbDepositHistory).filter(DbDepositHistory.tx_hash == tx_hash ).all()
     
-#     else:
-#         return db.query(DbDepositHistory).filter(or_(DbDepositHistory.to_address == address, DbDepositHistory.status == mode) ).all()
-
-def get_history_deposit_by_tx_hash(tx_hash, db:Session):
-
-    return db.query(DbDepositHistory).filter(DbDepositHistory.tx_hash == tx_hash ).first()
+    else:
+        return db.query(DbDepositHistory).filter(or_(DbDepositHistory.tx_hash == tx_hash, DbDepositHistory.status == status) ).all()
 
 
-# def get_request_deposit_by_user(user_id, db:Session, mode: Union[DepositRequestStatus, None]= None):
+def get_deposit_history_by_status(status: DepositHistoryStatus, db:Session):
+    return db.query(DbDepositHistory).filter(DbDepositHistory.status == status ).all()
 
-#     if mode == None:
-#         return db.query(DdDepositRequest).filter(DdDepositRequest.user_id == user_id).all()
+
+def get_deposit_history_by_user_id(user_id, db:Session, status: Union[DepositHistoryStatus, None]= None):
+
+    if status == None:
+        return db.query(DbDepositHistory).filter(DbDepositHistory.user_id == user_id).all()
     
-#     else:
-#         return db.query(DdDepositRequest).filter(or_(DdDepositRequest.user_id == user_id, DdDepositRequest.status == mode)).all()
+    else:
+        return db.query(DbDepositHistory).filter(or_(DbDepositHistory.user_id == user_id, DbDepositHistory.status == status)).all()
+
+
+def update_deposit_history_by_request_id(request_id, new_data: DepositHistoryModelForUpdateDataBase, db: Session, commit=True):
+
+    obj = db.query(DbDepositHistory).filter(DbDepositHistory.request_id == request_id )
+
+    for key, value in new_data.items():
+        if value is not None:
+            obj.update({getattr(DbDepositHistory, key): value})
+
+    if commit:
+        
+        db.commit()
+
 
 
 
