@@ -75,7 +75,7 @@ def deposit_comfirmation(request: DepositConfirmation, user_id: int=Depends(get_
 
 
 @router.get('/history', response_model=DepositHistoryResponse, responses={404:{'model':HTTPError}})
-def deposit_comfirmation(start_time: int, end_time: int, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
+def deposit_comfirmation(start_time: datetime, end_time: datetime, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
     history = db_deposit_history.get_deposit_history_by_time(user_id, start_time, end_time, db)
 
