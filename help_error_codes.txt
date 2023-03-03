@@ -15,3 +15,6 @@
 1015 = The email or password is incorrect
 1016 = There was a problem in registering the withdraw request
 1017 = There was a problem in registering the transfer request
+1018 = withdraw has locked
+1019 = deposit has locked
+1020 = transfer has locked
