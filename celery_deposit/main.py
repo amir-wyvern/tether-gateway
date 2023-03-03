@@ -316,7 +316,9 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
 
                 if datetime.now() - request.request_time > timedelta(hours=1):
                     new_data = {
-                        'status': DepositHistoryStatus.FAILED
+                        'error_message': 'the request has expired',
+                        'status': DepositHistoryStatus.FAILED,
+                        'processingـcompletionـtime': datetime.now()
                     }
                     update_deposit_history_by_request_id(request.request_id, DepositHistoryModelForUpdateDataBase(**new_data), db, commit=False)
             
