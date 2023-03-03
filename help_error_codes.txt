@@ -17,4 +17,4 @@
 1017 = There was a problem in registering the transfer request
 1018 = withdraw has locked
 1019 = deposit has locked
-1020 = transfer has locked
+1020 = transfer has locked 
