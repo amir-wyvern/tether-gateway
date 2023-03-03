@@ -194,6 +194,7 @@ class WithdrawHistoryModelForUpdateDataBase(BaseModel):
 
     tx_hash: Union[str, None]
     status: Union[WithdrawHistoryStatus, None]
+    withdraw_fee: Union[float, None]
     error_message: Union[str, None]
     processingـcompletionـtime: Union[datetime, None]
 
@@ -230,27 +231,36 @@ class WithdrawtHistoryResponse(BaseModel):
 
 
 # Transfer modeles
-class DepositHistoryStatus(int, Enum):
-    SUCCESS = 1
-    FAILED = 2
+class TransferHistoryStatus(int, Enum):
+    PROCESSING = 1
+    SUCCESS = 2
+    FAILED = 3
     
 class TransferRequest(BaseModel):
 
     value: float = Field(gt=0)
     to_user: int
-    from_user: int
+
 
 class TransferHistoryModelForDataBase(BaseModel):
 
     request_id: int
-    user_id: int
+    from_user: int
     to_user: int
-    error_message: str
+    error_message: Union[str, None]
     value: float = Field(gt=0)
     status: TransferHistoryStatus
-    transfer_fee_percentage: float
-    transfer_fee_value: float
-    timestamp: datetime
+    transfer_fee_percentage: float 
+    transfer_fee_value: Union[float, None]
+    request_time: datetime
+    processingـcompletionـtime: Union[datetime, None]
+
+class TransferHistoryModelForUpdateDataBase(BaseModel):
+
+    error_message: Union[str, None]
+    status: TransferHistoryStatus
+    transfer_fee_value: Union[float, None]
+    processingـcompletionـtime: Union[datetime, None]
 
 
 class TransferRequestResponse(BaseModel):
@@ -313,8 +323,6 @@ class DepositRequestResponse(BaseModel):
 class DepositRequest(BaseModel):
 
     value: float = Field(gt=0)
-    # to_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
-    # from_address: str = Field(min_length=1, max_length=100) # check format addrss with Fields
 
 class DepositConfirmation(BaseModel):
 
