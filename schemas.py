@@ -169,7 +169,6 @@ class HTTPError(BaseModel):
 
 
 # Withdraw modeles
-
 class WithdrawHistoryStatus(int, Enum):
     PROCESSING = 1
     SUCCESS = 2
@@ -186,10 +185,17 @@ class WithdrawHistoryModelForDataBase(BaseModel):
     value: float
     status: WithdrawHistoryStatus
     error_message: Union[str, None]
-    withdraw_fee_percentage: Union[float, None]
+    withdraw_fee_percentage: float
     withdraw_fee_value: Union[float, None]
-    timestamp: datetime
+    request_time: datetime
+    processingـcompletionـtime: Union[datetime, None]
 
+class WithdrawHistoryModelForUpdateDataBase(BaseModel):
+
+    tx_hash: Union[str, None]
+    status: Union[WithdrawHistoryStatus, None]
+    error_message: Union[str, None]
+    processingـcompletionـtime: Union[datetime, None]
 
 class WithdrawRequest(BaseModel):
 
@@ -215,19 +221,37 @@ class WithdrawHistoryModel(BaseModel):
     address: str
     value: float
     tx_hash: str
-    timestamp: int
+    timestamp: datetime
 
 class WithdrawtHistoryResponse(BaseModel):
 
-    txs: List[WithdrawHistoryModel]
+    txs: List[WithdrawHistoryModelForDataBase]
 
 
 
 # Transfer modeles
+class DepositHistoryStatus(int, Enum):
+    SUCCESS = 1
+    FAILED = 2
+    
 class TransferRequest(BaseModel):
 
     value: float = Field(gt=0)
-    destination_phone_number: str = Field(min_length=1, max_length=100)
+    to_user: int
+    from_user: int
+
+class TransferHistoryModelForDataBase(BaseModel):
+
+    request_id: int
+    user_id: int
+    to_user: int
+    error_message: str
+    value: float = Field(gt=0)
+    status: TransferHistoryStatus
+    transfer_fee_percentage: float
+    transfer_fee_value: float
+    timestamp: datetime
+
 
 class TransferRequestResponse(BaseModel):
     
@@ -236,11 +260,11 @@ class TransferRequestResponse(BaseModel):
 
 class TransferHistoryModel(BaseModel):
 
-    from_address: str
-    to_address: str
+    request_id: int
+    from_user: str
+    to_user: str
     value: float
-    tx_hash: str
-    timestamp: int
+    timestamp: datetime
 
 class TransferHistoryResponse(BaseModel):
 
@@ -255,27 +279,31 @@ class TransferHistoryRequest(BaseModel):
 
 # Deposit
 class DepositHistoryStatus(int, Enum):
-    SUCCESS = 1
-    FAILED = 2
-
-class DepositRequestStatus(int, Enum):
     WAITING = 1
     SUCCESS = 2
-    EXPIRE = 3
-
+    FAILED = 3
 
 
 class DepositHistoryModelForDataBase(BaseModel):
 
-    tx_hash: Union[str, None]
     request_id: int
+    tx_hash: Union[str, None]
     user_id: int
     from_address: Union[str, None] 
     to_address: str
     value: float
     status: DepositHistoryStatus
     error_message: Union[str, None]
-    timestamp: datetime
+    request_time: datetime
+    processingـcompletionـtime: Union[datetime, None]
+
+class DepositHistoryModelForUpdateDataBase(BaseModel):
+
+    tx_hash: Union[str, None]
+    from_address: Union[str, None] 
+    status: Union[DepositHistoryStatus, None]
+    error_message: Union[str, None]
+    processingـcompletionـtime: Union[datetime, None]
 
 class DepositRequestResponse(BaseModel):
 
@@ -297,16 +325,10 @@ class DepositHistoryRequest(BaseModel):
     offset: int
     count: int
 
-class DepositHistoryModel(BaseModel):
-
-    address: str
-    value: float
-    tx_hash: str
-    timestamp: int
 
 class DepositHistoryResponse(BaseModel):
 
-    txs: List[DepositHistoryModel]
+    txs: List[DepositHistoryModelForDataBase]
 
 class ReceivedTx(BaseModel):
 
