@@ -7,11 +7,14 @@ from db import db_config
 from db.db_main_account import get_p_withdraw, get_withdraw_address
 from db.db_user import get_user, decrease_balance
 from db.db_withdraw_history import (
-    create_withdraw_history
+    update_withdraw_history_by_request_id
 )
 from celery_tasks.tasks import WithdrawCeleryTask
 from celery_tasks.utils import create_worker_from
-from schemas import WithdrawHistoryModelForDataBase, WithdrawHistoryStatus
+from schemas import (
+    WithdrawHistoryModelForUpdateDataBase,
+    WithdrawHistoryStatus,
+)
 
 from cache.database import get_redis_cache
 from cache.cache_session import (
@@ -139,7 +142,6 @@ class Contract:
                 
                 failed_count_of_req += 1
                 
-
     def wait_for_tx_receipt(self, request_id, tx_hash):
 
         failed_count_of_req = 0
@@ -201,17 +203,14 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
 
         if config.withdraw_lock == True:
             # send to notifacion 
-            logger.info(f'withdraw is locked [request_id: {request_id}]')
-            data = {
-                'request_id': request_id,
-                'user_id': user_id,
-                'value': value,
-                'to_address': to_address,
-                'from_address': from_address,
-                'error_message': 'withdraw is locked',
-                'status': WithdrawHistoryStatus.FAILED
+            logger.info(f'withdraw has locked [request_id: {request_id}]')
+
+            new_data = {
+                'status': WithdrawHistoryStatus.FAILED,
+                'error_message': 'withdraw has locked',
+                'processingـcompletionـtime': datetime.now(),
             }
-            create_withdraw_history(WithdrawHistoryModelForDataBase(**data), db)
+            update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db)
             return
         
         user_data = get_user(user_id, db)
@@ -224,18 +223,14 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
 
         if ( min_user_balance + withdraw_fee + value ) > balance :
             logger.info(f'The user does not have enough balance to withdraw the desired amount ( config.min_user_balance + withdraw_fee + value ) > balance [request_id: {request_id}]')
-            data = {
-                'request_id': request_id,
-                'user_id': user_id,
-                'value': value,
-                'to_address': to_address,
-                'from_address': from_address,
-                'withdraw_fee_percentage': config.withdraw_fee_percentage,
-                'withdraw_fee_value': withdraw_fee,
+
+            new_data = {
+                'status': WithdrawHistoryStatus.FAILED,
                 'error_message': 'The user does not have enough balance to withdraw the desired amount (withdraw_fee + value ) > balance )',
-                'status': WithdrawHistoryStatus.FAILED
+                'processingـcompletionـtime': datetime.now(),
             }
-            create_withdraw_history(WithdrawHistoryModelForDataBase(**data), db)
+            update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db)
+
             return
 
         encryted_private_key = get_p_withdraw(db)
@@ -246,53 +241,43 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
         tx_hash, status, err_msg = self.contract.send_tx(request_id, value, to_address, private_key)
 
         if tx_hash is None and status == False:
+
             logger.info(f'Failed Tx  [request_id: {request_id} -err_msg: {err_msg}]')
-            data = {
-                'request_id': request_id,
-                'user_id': user_id,
-                'value': value,
-                'to_address': to_address,
-                'from_address': from_address,
-                'withdraw_fee_percentage': config.withdraw_fee_percentage,
-                'withdraw_fee_value': withdraw_fee,
+            new_data = {
+                'status': WithdrawHistoryStatus.FAILED,
                 'error_message': err_msg,
-                'status': WithdrawHistoryStatus.FAILED
+                'processingـcompletionـtime': datetime.now(),
             }
-            create_withdraw_history(WithdrawHistoryModelForDataBase(**data), db)
+            update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db)
+
             return
-        
-        data = {
-            'request_id': request_id,
+
+        new_data = {
             'tx_hash': tx_hash,
-            'user_id': user_id,
-            'from_address': from_address,
-            'to_address': to_address,
-            'value': value,
-            'error_message': None,
             'withdraw_fee_percentage': config.withdraw_fee_percentage,
             'withdraw_fee_value': withdraw_fee,
-            'timestamp': datetime.now()
+            'processingـcompletionـtime': datetime.now()
         }
 
         try:
             
             if tx_hash is not None and status == False:
-                data.update({'status': WithdrawHistoryStatus.FAILED})
-                data.update({'error_message': err_msg})
+                new_data.update({'status': WithdrawHistoryStatus.FAILED})
+                new_data.update({'error_message': err_msg})
                 
                 logger.info(f'Failed Tx  [request_id: {request_id} -error_message: {err_msg}]')
-                create_withdraw_history(WithdrawHistoryModelForDataBase(**data), db)
+                update_withdraw_history_by_request_id(WithdrawHistoryModelForUpdateDataBase(**new_data), db)
                 return
     
-            data.update({'status': WithdrawHistoryStatus.SUCCESS})
+            new_data.update({'status': WithdrawHistoryStatus.SUCCESS})
             decrease_balance(user_id, value + withdraw_fee, db, commit=False)
-            create_withdraw_history(WithdrawHistoryModelForDataBase(**data), db, commit=False)
+            update_withdraw_history_by_request_id(WithdrawHistoryModelForUpdateDataBase(**new_data), db, commit=False)
             db.commit()
             
             logger.info(f'Tx Successfull [request_id: {request_id} -tx_hash: {tx_hash}]')
 
         except Exception as e :
-            logger.error(f'Rollback in saving tx [request_id: {request_id} -exception: {e} -data: {data}]')
+            logger.error(f'Rollback in saving tx [request_id: {request_id} -exception: {e} -data: {new_data}]')
             db.rollback()
             raise e
 
