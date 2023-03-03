@@ -1,6 +1,9 @@
+from schemas import WithdrawHistoryModelForDataBase, WithdrawHistoryModelForUpdateDataBase
 from sqlalchemy.orm.session import Session
+from sqlalchemy import and_
+
 from db.models import DbWithdrawHistory
-from schemas import WithdrawHistoryModelForDataBase
+from typing import Union
 
 
 def create_withdraw_history(request: WithdrawHistoryModelForDataBase, db: Session, commit=True):
@@ -16,7 +19,8 @@ def create_withdraw_history(request: WithdrawHistoryModelForDataBase, db: Sessio
         value= request.value,
         withdraw_fee_percentage= request.withdraw_fee_percentage,
         withdraw_fee_value= request.withdraw_fee_value,
-        timestamp= request.timestamp
+        request_time= request.request_time,
+        processingـcompletionـtime= request.processingـcompletionـtime
     )
     db.add(withdraw_history)
 
@@ -27,30 +31,36 @@ def create_withdraw_history(request: WithdrawHistoryModelForDataBase, db: Sessio
         return withdraw_history
 
 
-# def get_request_deposit_by_id(request_id, db:Session, mode: Union[DepositRequestStatus, None]= None):
 
-#     return db.query(DdDepositRequest).filter(DdDepositRequest.request_id == request_id ).first()
 
-# def get_history_deposit_by_address(address, db:Session, mode: Union[DepositHistoryStatus, None]= None):
+def get_deposit_history_by_time(user_id, start_time, end_time, db:Session, status: Union[DbWithdrawHistory, None]= None):
 
-#     if mode == None:
-#         return db.query(DbDepositHistory).filter(DbDepositHistory.to_address == address ).all()
+    if status == None:
+        return db.query(DbWithdrawHistory).filter(and_(
+            DbWithdrawHistory.user_id == user_id, 
+            DbWithdrawHistory.request_time >= start_time, 
+            DbWithdrawHistory.request_time <= end_time
+            )).all()
     
-#     else:
-#         return db.query(DbDepositHistory).filter(or_(DbDepositHistory.to_address == address, DbDepositHistory.status == mode) ).all()
+    else:
+        return db.query(DbWithdrawHistory).filter(and_(
+            DbWithdrawHistory.user_id == user_id, 
+            DbWithdrawHistory.request_time >= start_time, 
+            DbWithdrawHistory.request_time <= end_time,
+            DbWithdrawHistory.status == status
+            )).all()
 
-# def get_history_deposit_by_tx_hash(tx_hash, db:Session):
 
-#     return db.query(DbDepositHistory).filter(DbDepositHistory.tx_hash == tx_hash ).first()
+def update_withdraw_history_by_request_id(request_id, new_data: WithdrawHistoryModelForUpdateDataBase, db: Session, commit=True):
 
+    obj = db.query(DbWithdrawHistory).filter(DbWithdrawHistory.request_id == request_id )
 
-# def get_request_deposit_by_user(user_id, db:Session, mode: Union[DepositRequestStatus, None]= None):
+    for key, value in new_data.items():
+        if value is not None:
+            obj.update({getattr(DbWithdrawHistory, key): value})
 
-#     if mode == None:
-#         return db.query(DdDepositRequest).filter(DdDepositRequest.user_id == user_id).all()
-    
-#     else:
-#         return db.query(DdDepositRequest).filter(or_(DdDepositRequest.user_id == user_id, DdDepositRequest.status == mode)).all()
-
+    if commit:
+        
+        db.commit()
 
 
