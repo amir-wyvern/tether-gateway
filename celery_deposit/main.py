@@ -7,7 +7,7 @@ from db.database import get_db
 from db.db_user import increase_balance
 from db.db_main_account import get_deposit_address
 from db.models import DepositHistoryStatus
-from db.db_deposit_history import (
+from db.db_deposit import (
     get_deposit_history_by_tx_hash,
     get_deposit_history_by_user_id,
     update_deposit_history_by_request_id, 
@@ -58,7 +58,8 @@ logger.addHandler(file_handler)
 config = dotenv_values("celery_deposit/.env")
 
 TRANSFER_HASH = config['TRANSFER_HASH']
-
+REQUEST_EXPIRE_TIME = timedelta(minutes= int(config['REQUEST_EXPIRE_TIME']))
+TX_EXPIRE_TIME = timedelta(minutes= int(config['TX_EXPIRE_TIME']))
 
 def safe_financial(func):
   
@@ -201,27 +202,30 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         
         if config.deposit_lock == True:
             # send to notifacion 
+            # NOTE : dont need the save to database , coz beat celery check it and , in this section we haven't yet request_id 
             logger.info(f'deposit is locked [user_id: {user_id} -tx_hash: {tx_hash}]')
             return
             
         no_check_deposit_requests = get_deposit_history_by_user_id(user_id, db, DepositHistoryStatus.WAITING)
-        logger.debug(f'db_deposit_request > get_deposit_history_by_user_id > response [user_id: {user_id} -result:{len(no_check_deposit_requests) * "*"}')
+        logger.debug(f'db_deposit > get_deposit_history_by_user_id > response [user_id: {user_id} -result:{len(no_check_deposit_requests) * "*"}')
 
         deposit_requests = []
         for request in no_check_deposit_requests:
-            if datetime.now() - request.timestamp < timedelta(hours=1):
+            if datetime.now() - request.request_time < REQUEST_EXPIRE_TIME:
                 deposit_requests.append(request)
 
         if deposit_requests == []:
             # send to notifaction
+            # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
             logger.info(f'The user have no deposit request  [user_id: {user_id} -tx_hash: {tx_hash}')
             return
         
         old_tx_hash = get_deposit_history_by_tx_hash(tx_hash, db, status= DepositHistoryStatus.SUCCESS)
-        logger.debug(f'db_deposit_request > get_deposit_history_by_tx_hash > response [user_id: {user_id} -tx_hash: {tx_hash} -result: {old_tx_hash is not None}')
+        logger.debug(f'db_deposit > get_deposit_history_by_tx_hash > response [user_id: {user_id} -tx_hash: {tx_hash} -result: {old_tx_hash is not None}')
         
         if old_tx_hash is not None :
             # send to notifaction
+            # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
             logger.info(f'The tx hash is aleady registerd [user_id: {user_id} -tx_hash: {tx_hash}]')
             return
         
@@ -230,16 +234,20 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         if not receipt :
             logger.info(f'The receipt of tx hash is None [user_id: {user_id} -tx_hash: {tx_hash}]')
             # send to notifaction
+            # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
             return
         
         if receipt['status'] == 0 : 
-            logger.info(f'The transaction is Failed [user_id: {user_id} -tx_hash: {tx_hash}]')
             # send to notifaction
+            # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
+            logger.info(f'The transaction is Failed [user_id: {user_id} -tx_hash: {tx_hash}]')
             return
         
         timestamp = self.contract.get_tx_time(receipt['blockNumber'])
         
-        if datetime.now() - timestamp > timedelta(days=1) :
+        if datetime.now() - timestamp > TX_EXPIRE_TIME :
+            # send to notifaction
+            # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
             logger.info(f'A long time has passed since the transaction and it is not accepted [user_id: {user_id} -tx_hash: {tx_hash} -timedelta: {datetime.now() - timestamp }]')
             return
 
@@ -265,41 +273,55 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                 break
             
         if state == False:
-            logger.info(f'The transaction is not valid [user_id: {user_id} -tx_hash: {tx_hash}]')
             # send to notification
+            # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
+            logger.info(f'The transaction is not valid [user_id: {user_id} -tx_hash: {tx_hash}]')
             return
         
+        new_data = {
+            'tx_hash': tx_hash,
+            'from_address': from_address,
+            'error_message': None
+        }
+
         deposit_status = False
+        tmp_request_id = None
+
         for request in deposit_requests:
             if round(request.value, 2) == round(value, 2):
-                
-                new_data = {
-                    'tx_hash': tx_hash,
-                    'from_address': from_address ,
-                    'error_message': None,
-                    'status': DepositHistoryStatus.SUCCESS,
-                    'processingـcompletionـtime': datetime.now()
-                }
-
+                tmp_request_id = request.request_id
                 try:
                     
+                    new_data.update({'status': DepositHistoryStatus.SUCCESS, 'processingـcompletionـtime': datetime.now()})
                     increase_balance(request.user_id, value, db, commit=False)
                     update_deposit_history_by_request_id(request.request_id, DepositHistoryModelForUpdateDataBase(**new_data), db, commit=False)
                     db.commit()
-                    deposit_status = True
-                    logger.info(f'Saved a transaction in deposit history DB [user_id: {user_id} -tx_hash: {tx_hash}]')
+                    logger.info(f'Depoist Successfull [request_id: {request.request_id} -user_id: {user_id} -value: {value} -tx_hash: {tx_hash}]')
 
+                    deposit_status = True
 
                 except Exception as e :
-                    logger.error(f'Rollback in saving tx [exception: {e} -data: {new_data}]')
+                    logger.error(f'Rollback in saving tx [request_id: {request.request_id} ,exception: {e} -user_id: {user_id} -data: {new_data}]')
                     db.rollback()
-                    raise e
+                    
+                    new_data.update({'error_message': f'RollBack [{e}]'})
 
                 break
 
         if deposit_status == False:
-
             logger.info(f'The value transaction is not match with any of deposit requests [user_id: {user_id} -tx_hash: {tx_hash}]')
+
+            if tmp_request_id:
+                error_message = 'The value transaction is not match with any of deposit requests'
+                data = {
+                    'tx_hash': tx_hash,
+                    'from_address': from_address ,
+                    'status': DepositHistoryStatus.FAILED,
+                    'error_message': error_message if new_data['error_message'] == None else new_data['error_message'],
+                    'processingـcompletionـtime': datetime.now()
+                }
+                update_deposit_history_by_request_id(tmp_request_id, DepositHistoryModelForUpdateDataBase(**data), db)
+
         
     @staticmethod
     def check_deposit_requests():
@@ -309,12 +331,12 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         db = get_db().__next__()
         
         ls_requests = get_deposit_history_by_status(DepositHistoryStatus.WAITING, db)
-        logger.debug(f'db_deposit_request > get_deposit_history_by_status > response [status: {DepositHistoryStatus.WAITING} -count: {len(ls_requests)}]')
+        logger.debug(f'db_deposit > get_deposit_history_by_status > response [status: {DepositHistoryStatus.WAITING} -count: {len(ls_requests)}]')
         
         try:
             for request in ls_requests:
 
-                if datetime.now() - request.request_time > timedelta(hours=1):
+                if datetime.now() - request.request_time > REQUEST_EXPIRE_TIME:
                     new_data = {
                         'error_message': 'the request has expired',
                         'status': DepositHistoryStatus.FAILED,
@@ -326,9 +348,8 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
             logger.debug(f'check_deposit_requests is Done!')
 
         except Exception as e :
-            logger.error(f'Rollback in update_status_by_request_id [exception: {e}]')
+            logger.critical(f'Rollback in update_status_by_request_id [exception: {e}]')
             db.rollback()
-            raise e
 
 
 
