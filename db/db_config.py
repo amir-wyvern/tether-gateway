@@ -1,7 +1,5 @@
 from sqlalchemy.orm.session import Session
-from schemas import UpdateConfig
 from db.models import DbConfig
-import logging
 
 def init_table(db:Session):
 
