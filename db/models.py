@@ -66,23 +66,17 @@ class DbConfig(Base):
     referal_bonus_percentage = Column(Float(9,6), nullable=False, default=0.1) # CheckConstraint(referal_bonus_percentage >= 0)
 
 
-# class DbPassword(Base):
-#     __tablename__ = 'password'
-
-#     user_id = Column(Integer, ForeignKey('user.user_id'), primary_key=True, nullable=False, unique=True, index=True)
-#     password = Column(VARCHAR(200), nullable=False)
-
-
 class DbTransferHistory(Base):
     __tablename__ = 'transfer_history'
 
-    tx_hash = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
-    from_user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
-    to_user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    request_id = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+    to_user = Column(VARCHAR(42), index=True, nullable=False)
     error_message = Column(VARCHAR(400), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+    status = Column(Enum(WithdrawHistoryStatus), nullable=False) # CheckConstraint('value > 0')
     transfer_fee_percentage = Column(Float(9,6), nullable=False) # CheckConstraint('transfer_fee_percentage > 0')
-    transfer_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('transfer_fee_value > 0')
+    transfer_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('withdraw_fee_value > 0')
     timestamp = Column(DateTime, nullable=False)
 
 
@@ -90,16 +84,17 @@ class DbWithdrawHistory(Base):
     __tablename__ = 'withdraw_history'
 
     request_id = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
-    tx_hash = Column(VARCHAR(100), unique=True, index=True)
+    tx_hash = Column(VARCHAR(100), unique=True, index=True, nullable=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     from_address = Column(VARCHAR(42), index=True, nullable=False)
     to_address = Column(VARCHAR(42), index=True, nullable=False)
     error_message = Column(VARCHAR(400), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
-    status = Column(Enum(WithdrawHistoryStatus), nullable=False) # CheckConstraint('value > 0')
+    status = Column(Enum(WithdrawHistoryStatus), index=True, nullable=False) # CheckConstraint('value > 0')
     withdraw_fee_percentage = Column(Float(9,6), nullable=False) # CheckConstraint('transfer_fee_percentage > 0')
-    withdraw_fee_value = Column(Float(15,6), nullable=False) # CheckConstraint('withdraw_fee_value > 0')
-    timestamp = Column(DateTime, nullable=False)
+    withdraw_fee_value = Column(Float(15,6), nullable=True) # CheckConstraint('withdraw_fee_value > 0')
+    request_time = Column(DateTime, index=True, nullable=False)
+    processingـcompletionـtime = Column(DateTime, index=True, nullable=True)
 
 
 class DbDepositHistory(Base):
@@ -111,22 +106,24 @@ class DbDepositHistory(Base):
     from_address = Column(VARCHAR(42), index=True, nullable=True)
     to_address = Column(VARCHAR(42), index=True, nullable=False)
     error_message = Column(VARCHAR(400), nullable=True)
-    status = Column(Enum(DepositHistoryStatus), nullable=False)
+    status = Column(Enum(DepositHistoryStatus), index=True, nullable=False)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
-    timestamp = Column(DateTime, nullable=False)
+    request_time = Column(DateTime, index=True, nullable=False)
+    processingـcompletionـtime = Column(DateTime, index=True, nullable=True)
+
 
     # relUser = relationship("DbUser")
 
 
-class DdDepositRequest(Base):
-    __tablename__ = 'deposit_request'
+# class DdDepositRequest(Base):
+#     __tablename__ = 'deposit_request'
 
-    request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
-    # from_address = Column(VARCHAR(42), index=True, nullable=False)
-    to_address = Column(VARCHAR(42), index=True, nullable=False)
-    value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
-    status = Column(Enum(DepositRequestStatus), nullable=False)
-    error_message = Column(VARCHAR(400), nullable=True)
-    timestamp = Column(DateTime, nullable=False)
+#     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+#     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
+#     # from_address = Column(VARCHAR(42), index=True, nullable=False)
+#     to_address = Column(VARCHAR(42), index=True, nullable=False)
+#     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
+#     status = Column(Enum(DepositRequestStatus), nullable=False)
+#     error_message = Column(VARCHAR(400), nullable=True)
+#     timestamp = Column(DateTime, nullable=False)
 
