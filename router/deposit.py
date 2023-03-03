@@ -15,7 +15,7 @@ from schemas import (
     DepositHistoryStatus
 )
 
-from db import db_main_account, db_deposit_history
+from db import db_deposit, db_main_account, db_config
 from db.database import get_db
 
 from celery_tasks.tasks import DepositCeleryTask 
@@ -26,6 +26,24 @@ from auth.oauth2 import (
 )
 from uuid import uuid4
 from datetime import datetime
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+# Create a console handler to show logs on terminal
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+# Create a file handler to save logs to a file
+file_handler = logging.FileHandler('deposit_route.log')
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 router = APIRouter(prefix='/deposit', tags=['Deposit'])
 
@@ -34,9 +52,15 @@ _, deposit_worker = create_worker_from(DepositCeleryTask)
 @router.post('/request', response_model=DepositRequestResponse, responses={403:{'model':HTTPError}})
 def deposit_request(request: DepositRequest, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
+    request_id = uuid4().hex[:12]
+    config = db_config.get_config(db)
+
+    if config.deposit_lock == True:
+        logger.info(f'deposit has locked [request_id: {request_id} -user_id: {user_id}]')
+        raise HTTPException(status_code=403, detail={'internal_code':1019, 'message':'deposit has locked'})
+
     deposit_address = db_main_account.get_deposit_address(db)
     
-    request_id = uuid4().hex[:12]
     request_data = {
         'request_id': request_id,
         'tx_hash': None,
@@ -50,7 +74,7 @@ def deposit_request(request: DepositRequest, user_id: int=Depends(get_current_us
         'processingـcompletionـtime': None
     }
 
-    resp = db_deposit_history.create_deposit_history(DepositHistoryModelForDataBase(**request_data), db)
+    resp = db_deposit.create_deposit_history(DepositHistoryModelForDataBase(**request_data), db)
 
     if resp:
         return JSONResponse(status_code=200, content={'request_id': resp.request_id ,'deposit_address': deposit_address})
@@ -61,8 +85,6 @@ def deposit_request(request: DepositRequest, user_id: int=Depends(get_current_us
 
 @router.post('/confirmation', response_model=BaseResponse, responses={404:{'model':HTTPError}})
 def deposit_comfirmation(request: DepositConfirmation, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
-
-    # send request to celery >> 
 
     payload = {
         'user_id': user_id,
@@ -77,7 +99,7 @@ def deposit_comfirmation(request: DepositConfirmation, user_id: int=Depends(get_
 @router.get('/history', response_model=DepositHistoryResponse, responses={404:{'model':HTTPError}})
 def deposit_comfirmation(start_time: datetime, end_time: datetime, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
-    history = db_deposit_history.get_deposit_history_by_time(user_id, start_time, end_time, db)
+    history = db_deposit.get_deposit_history_by_time_and_user(user_id, start_time, end_time, db)
 
     return JSONResponse(status_code=200, content={'txs': history })
 
