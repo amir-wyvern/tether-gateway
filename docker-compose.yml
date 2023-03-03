@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+    rabbit:
+        hostname: rabbit
+        image: rabbitmq:management
+        environment:
+            - RABBITMQ_DEFAULT_USER=admin
+            - RABBITMQ_DEFAULT_PASS=mypass
+        ports:
+            - 15672:15672
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
+    flower:
+      image: mher/flower:0.9.5
+      environment:
+        - CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
+        - FLOWER_PORT=5555
+        - FLOWER_PURGE_OFFLINE_WORKERS=10
+      ports:
+        - 5555:5555
+      links:
+        - rabbit
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+
+    deposit:
+        image: calc-deposit
+        build:
+            context: .
+            dockerfile: ./deposit/Dockerfile
+        links:
+            - rabbit
+        deploy:
+            replicas: 2
+            restart_policy:
+                condition: on-failure
+    transfer:
+        image: calc-transfer
+        build:
+            context: .
+            dockerfile: ./transfer/Dockerfile
+        links:
+            - rabbit
+        deploy:
+            replicas: 2
+            restart_policy:
+                condition: on-failure
+    withdraw:
+        image: calc-withdraw
+        build:
+            context: .
+            dockerfile: ./withdraw/Dockerfile
+        links:
+            - rabbit
+        deploy:
+            replicas: 2
+            restart_policy:
+                condition: on-failure
+
+    fastapi:
+        image: calc-fastapi
+        build:
+            context: .
+            dockerfile: ./fastapi/Dockerfile
+        ports:
+            - 5000:5000
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
