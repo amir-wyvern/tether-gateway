@@ -6,7 +6,7 @@ from db.database import get_db
 from db import db_config
 from db.db_main_account import get_p_withdraw, get_withdraw_address
 from db.db_user import get_user, decrease_balance
-from db.db_withdraw_history import (
+from db.db_withdraw import (
     update_withdraw_history_by_request_id
 )
 from celery_tasks.tasks import WithdrawCeleryTask
@@ -203,7 +203,7 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
 
         if config.withdraw_lock == True:
             # send to notifacion 
-            logger.info(f'withdraw has locked [request_id: {request_id}]')
+            logger.info(f'withdraw has locked [request_id: {request_id} -user_id: {user_id}]')
 
             new_data = {
                 'status': WithdrawHistoryStatus.FAILED,
@@ -222,11 +222,12 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
         min_user_balance = float(config.min_user_balance)
 
         if ( min_user_balance + withdraw_fee + value ) > balance :
-            logger.info(f'The user does not have enough balance to withdraw the desired amount ( config.min_user_balance + withdraw_fee + value ) > balance [request_id: {request_id}]')
+            logger.info(f'The user does not have enough balance to withdraw the desired amount ( config.min_user_balance + withdraw_fee + value ) > balance [request_id: {request_id} -user_id: {user_id}]')
 
             new_data = {
                 'status': WithdrawHistoryStatus.FAILED,
-                'error_message': 'The user does not have enough balance to withdraw the desired amount (withdraw_fee + value ) > balance )',
+                'withdraw_fee': withdraw_fee,
+                'error_message': 'The user does not have enough balance to withdraw the desired amount (withdraw_fee + value ) > balance',
                 'processingـcompletionـtime': datetime.now(),
             }
             update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db)
@@ -242,7 +243,7 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
 
         if tx_hash is None and status == False:
 
-            logger.info(f'Failed Tx  [request_id: {request_id} -err_msg: {err_msg}]')
+            logger.info(f'Failed Tx  [request_id: {request_id} user_id: {user_id} -err_msg: {err_msg}]')
             new_data = {
                 'status': WithdrawHistoryStatus.FAILED,
                 'error_message': err_msg,
@@ -254,32 +255,39 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
 
         new_data = {
             'tx_hash': tx_hash,
-            'withdraw_fee_percentage': config.withdraw_fee_percentage,
-            'withdraw_fee_value': withdraw_fee,
-            'processingـcompletionـtime': datetime.now()
+            'withdraw_fee_value': withdraw_fee
         }
 
         try:
             
             if tx_hash is not None and status == False:
-                new_data.update({'status': WithdrawHistoryStatus.FAILED})
-                new_data.update({'error_message': err_msg})
+                new_data.update({
+                    'status': WithdrawHistoryStatus.FAILED,
+                    'error_message': err_msg,
+                    'processingـcompletionـtime': datetime.now()
+                    })
                 
-                logger.info(f'Failed Tx  [request_id: {request_id} -error_message: {err_msg}]')
-                update_withdraw_history_by_request_id(WithdrawHistoryModelForUpdateDataBase(**new_data), db)
+                logger.info(f'Failed Tx  [request_id: {request_id} user_id: {user_id} -error_message: {err_msg}]')
+                update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db)
                 return
     
-            new_data.update({'status': WithdrawHistoryStatus.SUCCESS})
+            new_data.update({'status': WithdrawHistoryStatus.SUCCESS, 'processingـcompletionـtime': datetime.now()})
             decrease_balance(user_id, value + withdraw_fee, db, commit=False)
-            update_withdraw_history_by_request_id(WithdrawHistoryModelForUpdateDataBase(**new_data), db, commit=False)
+            update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db, commit=False)
             db.commit()
             
-            logger.info(f'Tx Successfull [request_id: {request_id} -tx_hash: {tx_hash}]')
+            logger.info(f'Withdraw Successfull [request_id: {request_id} -user_id: {user_id} -tx_hash: {tx_hash}]')
 
         except Exception as e :
-            logger.error(f'Rollback in saving tx [request_id: {request_id} -exception: {e} -data: {new_data}]')
+            logger.error(f'Rollback in saving tx [request_id: {request_id} -user_id: {user_id} -exception: {e} -data: {new_data}]')
             db.rollback()
-            raise e
+
+            new_data.update({
+                'status': WithdrawHistoryStatus.FAILED,
+                'error_message': f'RollBack [{e}]',
+                'processingـcompletionـtime': datetime.now()
+                })            
+            update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db)
 
 # create celery app
 app, withdraw_worker = create_worker_from(WithdrawCeleryTaskImpl)
