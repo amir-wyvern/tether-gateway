@@ -71,7 +71,7 @@ class DbTransferHistory(Base):
 
     request_id = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
     from_user = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
-    to_user = Column(VARCHAR(42), ForeignKey('user.user_id'), index=True, nullable=False)
+    to_user = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     error_message = Column(VARCHAR(2000), nullable=True)
     value = Column(Float(15,6), nullable=False) # CheckConstraint('value > 0')
     status = Column(Enum(TransferHistoryStatus), index=True, nullable=False) # CheckConstraint('value > 0')
@@ -101,7 +101,7 @@ class DbWithdrawHistory(Base):
 class DbDepositHistory(Base):
     __tablename__ = 'deposit_history'
 
-    request_id = Column(Integer, primary_key=True, unique=True, index=True)
+    request_id = Column(VARCHAR(100), primary_key=True, unique=True, index=True)
     tx_hash = Column(VARCHAR(100), unique=True, index=True, nullable=True)
     user_id = Column(Integer, ForeignKey('user.user_id'), index=True, nullable=False)
     from_address = Column(VARCHAR(42), index=True, nullable=True)
