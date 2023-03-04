@@ -55,7 +55,7 @@ def update_withdraw_history_by_request_id(request_id, new_data: WithdrawHistoryM
 
     obj = db.query(DbWithdrawHistory).filter(DbWithdrawHistory.request_id == request_id )
 
-    for key, value in new_data.items():
+    for key, value in new_data:
         if value is not None:
             obj.update({getattr(DbWithdrawHistory, key): value})
 

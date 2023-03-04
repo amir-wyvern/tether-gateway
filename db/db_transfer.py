@@ -50,7 +50,7 @@ def update_transfer_history_by_request_id(request_id, new_data: TransferHistoryM
 
     obj = db.query(DbTransferHistory).filter(DbTransferHistory.request_id == request_id )
 
-    for key, value in new_data.items():
+    for key, value in new_data:
         if value is not None:
             obj.update({getattr(DbTransferHistory, key): value})
 
