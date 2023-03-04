@@ -43,8 +43,9 @@ def safe_financial(func):
   
     def wrapper(*args, **kwargs):
 
-        user_id = args[1]['user_id']
+        user_id = args[1]['to_user']
         request_id = args[1]['request_id']
+
         db = get_redis_cache().__next__()
 
         safe_lock = get_status_lock_from_user(user_id, db) 
@@ -84,6 +85,17 @@ class TransferCeleryTaskImpl(TransferCeleryTask):
         to_user = payload["to_user"]
         value = payload["value"]
 
+        if from_user == to_user:
+            logger.info(f'to_user is same from_user [request_id: {request_id} -user_id: {from_user}]')
+
+            new_data = {
+                'error_message': 'to_user is same from_user',
+                'status': TransferHistoryStatus.FAILED,
+                'processingـcompletionـtime': datetime.now()
+            }
+            update_transfer_history_by_request_id(request_id, TransferHistoryModelForUpdateDataBase(**new_data), db)
+            return 
+
         db = get_db().__next__()
 
         config = db_config.get_config(db)
@@ -101,9 +113,26 @@ class TransferCeleryTaskImpl(TransferCeleryTask):
             update_transfer_history_by_request_id(request_id, TransferHistoryModelForUpdateDataBase(**new_data), db)
             return
         
+        to_user_data = get_user(from_user, db)
+
+        if to_user_data is None:
+            # send to notifacion 
+            logger.info(f'The to_user is not exist [request_id: {request_id} -user_id: {from_user} -to_user: {to_user}]')
+
+            new_data = {
+                'error_message': 'The to_user is not exist',
+                'status': TransferHistoryStatus.FAILED,
+                'processingـcompletionـtime': datetime.now()
+            }
+
+            update_transfer_history_by_request_id(request_id, TransferHistoryModelForUpdateDataBase(**new_data), db)
+            return
+
+
         user_data = get_user(from_user, db)
         logger.debug(f'db_user > get_user > response [request_id: {request_id} -result: {user_data is not None}]')
-        
+
+
         balance = float(user_data.balance)
 
         transfer_fee = float(config.transfer_fee_percentage) / 100 * value 
@@ -131,6 +160,7 @@ class TransferCeleryTaskImpl(TransferCeleryTask):
                 'status': TransferHistoryStatus.SUCCESS,
                 'processingـcompletionـtime': datetime.now()
             })
+            print(f'{from_user}, {transfer_fee + value} , {to_user}')
             decrease_balance(from_user, transfer_fee + value, db, commit=False)
             increase_balance(to_user, value, db, commit=False)
             update_transfer_history_by_request_id(request_id, TransferHistoryModelForUpdateDataBase(**new_data), db, commit=False)
