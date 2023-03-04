@@ -223,7 +223,7 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         old_tx_hash = get_deposit_history_by_tx_hash(tx_hash, db, status= DepositHistoryStatus.SUCCESS)
         logger.debug(f'db_deposit > get_deposit_history_by_tx_hash > response [user_id: {user_id} -tx_hash: {tx_hash} -result: {old_tx_hash is not None}')
         
-        if old_tx_hash is not None :
+        if len(old_tx_hash) > 0:
             # send to notifaction
             # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
             logger.info(f'The tx hash is aleady registerd [user_id: {user_id} -tx_hash: {tx_hash}]')
@@ -293,6 +293,7 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                 try:
                     
                     new_data.update({'status': DepositHistoryStatus.SUCCESS, 'processingـcompletionـtime': datetime.now()})
+
                     increase_balance(request.user_id, value, db, commit=False)
                     update_deposit_history_by_request_id(request.request_id, DepositHistoryModelForUpdateDataBase(**new_data), db, commit=False)
                     db.commit()
