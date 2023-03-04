@@ -76,7 +76,8 @@ def update_deposit_history_by_request_id(request_id, new_data: DepositHistoryMod
 
     obj = db.query(DbDepositHistory).filter(DbDepositHistory.request_id == request_id )
 
-    for key, value in new_data.items():
+
+    for key, value in new_data:
         if value is not None:
             obj.update({getattr(DbDepositHistory, key): value})
 
