@@ -206,7 +206,7 @@ class WithdrawRequest(BaseModel):
 class WithdrawRequestResponse(BaseModel):
     
     message: str
-    request_id: int
+    request_id: str
 
 class WithdrawConfirmation(BaseModel):
 
@@ -244,7 +244,7 @@ class TransferRequest(BaseModel):
 
 class TransferHistoryModelForDataBase(BaseModel):
 
-    request_id: int
+    request_id: str
     from_user: int
     to_user: int
     error_message: Union[str, None]
@@ -266,11 +266,11 @@ class TransferHistoryModelForUpdateDataBase(BaseModel):
 class TransferRequestResponse(BaseModel):
     
     message: str
-    request_id: int
+    request_id: str
 
 class TransferHistoryModel(BaseModel):
 
-    request_id: int
+    request_id: str
     from_user: str
     to_user: str
     value: float
@@ -296,7 +296,7 @@ class DepositHistoryStatus(int, Enum):
 
 class DepositHistoryModelForDataBase(BaseModel):
 
-    request_id: int
+    request_id: str
     tx_hash: Union[str, None]
     user_id: int
     from_address: Union[str, None] 
@@ -318,7 +318,7 @@ class DepositHistoryModelForUpdateDataBase(BaseModel):
 class DepositRequestResponse(BaseModel):
 
     deposit_address: str
-    request_id: int
+    request_id: str
 
 class DepositRequest(BaseModel):
 

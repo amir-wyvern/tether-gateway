@@ -53,6 +53,10 @@ def transfer_request(request: TransferRequest, user_id: int=Depends(get_current_
 
     request_id = uuid4().hex[:12]
 
+    if user_id == request.to_user:
+        logger.info(f'to_user is same from_user [request_id: {request_id} -user_id: {user_id}]')
+        raise HTTPException(status_code=403, detail={'internal_code':1021, 'message':'to_user is same from_user'})
+    
     config = db_config.get_config(db)
 
     if config.transfer_lock == True:
