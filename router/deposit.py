@@ -77,7 +77,7 @@ def deposit_request(request: DepositRequest, user_id: int=Depends(get_current_us
     resp = db_deposit.create_deposit_history(DepositHistoryModelForDataBase(**request_data), db)
 
     if resp:
-        return JSONResponse(status_code=200, content={'request_id': resp.request_id ,'deposit_address': deposit_address})
+        return JSONResponse(status_code=200, content={'request_id': request_id ,'deposit_address': deposit_address})
 
     else:
         raise HTTPException(status_code=403, detail={'internal_code':1003, 'message':'There was a problem in registering the deposit request'})
@@ -91,6 +91,7 @@ def deposit_comfirmation(request: DepositConfirmation, user_id: int=Depends(get_
         'tx_hash': request.tx_hash
     }
     
+    print(payload)
     deposit_worker.apply_async(args=(payload, )) 
 
     return JSONResponse(status_code=200, content={'message':'the request is proccessing'})
