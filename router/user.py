@@ -41,7 +41,7 @@ def update_user_profile(request: UserUpdateProfile, user_id: int=Depends(get_cur
     resp = db_user.update_user_profile(user_id, request, db)
 
     if resp == True:
-        return JSONResponse(status_code=200, content={'message':'The user profile updated'})
+        return {'message':'The user profile updated'}
 
     else :
         raise HTTPException(status_code=403, detail={'internal_code':1002 ,'message':'It is not possible to edit the information'})
@@ -54,7 +54,7 @@ def update_user_password(request: UpdatePassword, user_id: int=Depends(get_curre
     if Hash.verify(data.password, request.old_password):
 
         db_user.update_password(user_id, request, db)
-        return JSONResponse(status_code=200, content={'message':'The user password updated'})
+        return {'message':'The user password updated'}
     
     else:
         raise HTTPException(status_code=403, detail={'internal_code':1001, 'message':'The password is wrong'})
