@@ -46,7 +46,7 @@ class DbUser(Base):
 class DbMainAccounts(Base):
     __tablename__ = 'main_accounts'
 
-    index = Column(Integer, primary_key=True)
+    index = Column(Integer, primary_key=True, autoincrement=True)
     deposit_address = Column(VARCHAR(42), nullable=False)
     withdraw_address = Column(VARCHAR(42), nullable=False)
     p_withdraw = Column(VARCHAR(2000), nullable=False)
