@@ -16,7 +16,35 @@ from pathlib import Path
 dotenv_path = Path('.env')
 load_dotenv(dotenv_path=dotenv_path)
 
-app = FastAPI() 
+description = """
+This api allows you to create a payment gateway on the blockchain platform. 🚀
+
+## Items
+
+* Deposit
+* Withdraw
+* Local Transfer 
+
+## Users
+
+You will be able to:
+
+* **Create users** 
+* **Read users** 
+* **Edit users** 
+"""
+app = FastAPI(    
+    title="Tether-GateWay",
+    description=description,
+    version="0.0.1",
+    contact={
+        "name": "WyVern",
+        "email": "amirhosein_wyvern@yahoo.com",
+    },
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },) 
 app.include_router(user.router)
 app.include_router(deposit.router)
 app.include_router(withdraw.router)
