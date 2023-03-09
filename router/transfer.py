@@ -73,7 +73,7 @@ def transfer_request(request: TransferRequest, user_id: int=Depends(get_current_
     if ( min_user_balance + transfer_fee + request.value ) > balance :
         
         logger.info(f'The user does not have enough balance to transfer the desired amount ( config.min_user_balance + transfer_fee + value ) > balance [request_id: {request_id} -user_id: {user_id}]')
-        raise HTTPException(status_code=403, detail={'internal_code':1020, 'message':'transfer has locked'})
+        raise HTTPException(status_code=403, detail={'internal_code':1011, 'message':'Insufficient inventory'})
 
 
     request_data = {
@@ -100,13 +100,13 @@ def transfer_request(request: TransferRequest, user_id: int=Depends(get_current_
 
     transfer_worker.apply_async(args=(payload,))
 
-    return JSONResponse(status_code=200, content={'request_id': request_id ,'message':'transfer request registered'})
+    return {'request_id': request_id ,'message':'transfer request registered'}
 
 
 @router.get('/history', response_model=TransferHistoryResponse, responses={404:{'model':HTTPError}})
-def transfer_comfirmation(start_time: datetime, end_time: datetime, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
+def transfer_history(start_time: datetime, end_time: datetime, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
     history = db_transfer.get_transfer_history_by_time_and_user(user_id, start_time, end_time, db)
-    return JSONResponse(status_code=200, content={'txs': history })
+    return {'txs': history }
 
 
