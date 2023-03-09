@@ -43,7 +43,7 @@ def safe_financial(func):
   
     def wrapper(*args, **kwargs):
 
-        user_id = args[1]['to_user']
+        user_id = args[1]['from_user']
         request_id = args[1]['request_id']
 
         db = get_redis_cache().__next__()
@@ -160,7 +160,7 @@ class TransferCeleryTaskImpl(TransferCeleryTask):
                 'status': TransferHistoryStatus.SUCCESS,
                 'processingـcompletionـtime': datetime.now()
             })
-            print(f'{from_user}, {transfer_fee + value} , {to_user}')
+
             decrease_balance(from_user, transfer_fee + value, db, commit=False)
             increase_balance(to_user, value, db, commit=False)
             update_transfer_history_by_request_id(request_id, TransferHistoryModelForUpdateDataBase(**new_data), db, commit=False)
