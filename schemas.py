@@ -172,7 +172,7 @@ class HTTPError(BaseModel):
 class WithdrawHistoryStatus(int, Enum):
     PROCESSING = 1
     SUCCESS = 2
-    FAILED = 2
+    FAILED = 3
 
 
 class WithdrawHistoryModelForDataBase(BaseModel):
@@ -190,11 +190,15 @@ class WithdrawHistoryModelForDataBase(BaseModel):
     request_time: datetime
     processingـcompletionـtime: Union[datetime, None]
 
+    class Config:
+        orm_mode = True
+
+
 class WithdrawHistoryModelForUpdateDataBase(BaseModel):
 
     tx_hash: Union[str, None]
     status: Union[WithdrawHistoryStatus, None]
-    withdraw_fee: Union[float, None]
+    withdraw_fee_value: Union[float, None]
     error_message: Union[str, None]
     processingـcompletionـtime: Union[datetime, None]
 
@@ -229,7 +233,6 @@ class WithdrawtHistoryResponse(BaseModel):
     txs: List[WithdrawHistoryModelForDataBase]
 
 
-
 # Transfer modeles
 class TransferHistoryStatus(int, Enum):
     PROCESSING = 1
@@ -255,6 +258,9 @@ class TransferHistoryModelForDataBase(BaseModel):
     request_time: datetime
     processingـcompletionـtime: Union[datetime, None]
 
+    class Config:
+        orm_mode = True
+
 class TransferHistoryModelForUpdateDataBase(BaseModel):
 
     error_message: Union[str, None]
@@ -268,17 +274,9 @@ class TransferRequestResponse(BaseModel):
     message: str
     request_id: str
 
-class TransferHistoryModel(BaseModel):
-
-    request_id: str
-    from_user: str
-    to_user: str
-    value: float
-    timestamp: datetime
-
 class TransferHistoryResponse(BaseModel):
 
-    txs: List[TransferHistoryModel]
+    txs: List[TransferHistoryModelForDataBase]
 
 class TransferHistoryRequest(BaseModel):
 
@@ -306,6 +304,10 @@ class DepositHistoryModelForDataBase(BaseModel):
     error_message: Union[str, None]
     request_time: datetime
     processingـcompletionـtime: Union[datetime, None]
+
+    class Config:
+        orm_mode = True
+
 
 class DepositHistoryModelForUpdateDataBase(BaseModel):
 
