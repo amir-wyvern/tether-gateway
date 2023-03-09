@@ -103,7 +103,6 @@ def increase_balance(user_id, amount, db:Session, commit=True):
     user.update({
         DbUser.balance: round(float(user.first().balance) + amount, 6),
     })
-
     if commit:
         db.commit()
         return True

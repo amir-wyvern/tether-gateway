@@ -243,12 +243,12 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
             logger.info(f'The transaction is Failed [user_id: {user_id} -tx_hash: {tx_hash}]')
             return
         
-        timestamp = self.contract.get_tx_time(receipt['blockNumber'])
-        
-        if datetime.now() - timestamp > TX_EXPIRE_TIME :
+        block_timestamp = self.contract.get_tx_time(receipt['blockNumber'])
+
+        if datetime.now() - block_timestamp > TX_EXPIRE_TIME :
             # send to notifaction
             # NOTE : dont need the save to the database , coz beat celery check it and , in this section we haven't yet request_id 
-            logger.info(f'A long time has passed since the transaction and it is not accepted [user_id: {user_id} -tx_hash: {tx_hash} -timedelta: {datetime.now() - timestamp }]')
+            logger.info(f'A long time has passed since the transaction and it is not accepted [user_id: {user_id} -tx_hash: {tx_hash} -timedelta: {datetime.now() - block_timestamp }]')
             return
 
         state = False
@@ -288,7 +288,9 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
         tmp_request_id = None
 
         for request in deposit_requests:
-            if round(request.value, 2) == round(value, 2):
+            
+            if request.request_time < block_timestamp and round(request.value, 2) == round(value, 2):
+
                 tmp_request_id = request.request_id
                 try:
                     
@@ -344,7 +346,7 @@ class DepositCeleryTaskImpl(DepositCeleryTask):
                         'processingـcompletionـtime': datetime.now()
                     }
                     update_deposit_history_by_request_id(request.request_id, DepositHistoryModelForUpdateDataBase(**new_data), db, commit=False)
-            
+
             db.commit()
             logger.debug(f'check_deposit_requests is Done!')
 
