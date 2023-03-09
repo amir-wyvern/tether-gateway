@@ -98,12 +98,12 @@ def withdraw_request(request: WithdrawRequest, user_id: int=Depends(get_current_
 
     withdraw_worker.apply_async(args=(payload,))
 
-    return JSONResponse(status_code=200, content={'request_id': request_id ,'message':'Withdraw request registered'})
+    return {'request_id': request_id ,'message':'Withdraw request registered'}
 
 
 @router.get('/history', response_model=WithdrawtHistoryResponse, responses={404:{'model':HTTPError}})
-def withdraw_comfirmation(start_time: datetime, end_time: datetime, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
+def withdraw_history(start_time: datetime, end_time: datetime, user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
 
     history = db_withdraw.get_withdraw_history_by_time_and_user(user_id, start_time, end_time, db)
-    return JSONResponse(status_code=200, content={'txs': history })
+    return {"txs":history}
 
