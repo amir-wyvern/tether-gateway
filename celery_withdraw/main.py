@@ -226,8 +226,8 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
 
             new_data = {
                 'status': WithdrawHistoryStatus.FAILED,
-                'withdraw_fee': withdraw_fee,
-                'error_message': 'The user does not have enough balance to withdraw the desired amount (withdraw_fee + value ) > balance',
+                'withdraw_fee_value': withdraw_fee,
+                'error_message': 'The user does not have enough balance to withdraw the desired amount (config.min_user_balance + withdraw_fee + value ) > balance',
                 'processingـcompletionـtime': datetime.now(),
             }
             update_withdraw_history_by_request_id(request_id, WithdrawHistoryModelForUpdateDataBase(**new_data), db)
