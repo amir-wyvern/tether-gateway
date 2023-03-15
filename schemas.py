@@ -5,6 +5,13 @@ from enum import Enum
 import re
 
 
+class InitMainAccount(BaseModel):
+
+    deposit_address: str
+    withdraw_address: str
+    p_withdraw: str
+
+
 class UpdateConfig(BaseModel):
 
     withdraw_lock: bool
