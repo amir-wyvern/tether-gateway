@@ -65,5 +65,5 @@ if main_account is None:
         'withdraw_address': config['WITHDRAW_ADDRESS'],
         'p_withdraw': config['ENCODED_WITHDRAW_PRIVATE_KEY']
     }
-
+ 
     db_main_account.init_table(InitMainAccount(**data), get_db().__next__())
