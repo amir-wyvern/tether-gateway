@@ -15,4 +15,4 @@ RUN pip install --upgrade -r /requirements.txt
 COPY ./auth ./db ./cache ./celery_tasks ./router ./.env ./main.py ./schemas.py /
 
 # 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
