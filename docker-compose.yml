@@ -1,12 +1,30 @@
 version: "3"
 
 services:
-  # redis:
-  #   image: redis:6-alpine
-  #   ports:
-  #     - "6379:6379"
-  #   networks:
-  #     - my-network
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - my-network
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: cb5f6cf580aeaaed4c3
+      MYSQL_DATABASE: tether_gateway
+      MYSQL_USER: wyvern
+      MYSQL_PASSWORD: c3b0ec4695394b6a690
+    networks:
+      - my-network
+    ports:
+      - "3306:3306"
+    volumes: 
+      - mysql_data:/var/lib/mysql
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   fastapi:
     build: .
@@ -18,6 +36,17 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      
+  # fastapi:
+  #   build: .
+  #   # command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+  #   # depends_on:
+  #   #   - redis
+  #   networks:
+  #     - my-network
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
 
   # celery:
   #   image: celery:4
@@ -33,3 +62,6 @@ services:
 networks:
   my-network:
     driver: bridge
+
+volumes:
+  mysql_data:
