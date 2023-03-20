@@ -1,6 +1,8 @@
-import sys
-
-sys.path.append('../')
+# If you intend to run the file independently (you do not intend to run with Docker), remove the section from the comment
+# ======================
+# import sys
+# sys.path.append('../')
+# ======================
 
 from db import db_config
 from db.database import get_db
@@ -35,7 +37,10 @@ import json
 from dotenv import dotenv_values
 from datetime import datetime, timedelta
 import logging
+import os
 
+if not os.path.exists('logs') :
+    os.mkdir('logs')
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -48,14 +53,14 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 # Create a file handler to save logs to a file
-file_handler = logging.FileHandler('deposit_service.log')
+file_handler = logging.FileHandler('logs/deposit_service.log')
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 
-config = dotenv_values("celery_deposit/.env")
+config = dotenv_values(".env")
 
 TRANSFER_HASH = config['TRANSFER_HASH']
 REQUEST_EXPIRE_TIME = timedelta(minutes= int(config['REQUEST_EXPIRE_TIME']))

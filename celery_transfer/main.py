@@ -1,6 +1,8 @@
-import sys
-
-sys.path.append('../')
+# If you intend to run the file independently (you do not intend to run with Docker), remove the section from the comment
+# ======================
+# import sys
+# sys.path.append('../')
+# ======================
 
 from db.database import get_db
 from db import db_config
@@ -19,7 +21,10 @@ from cache.cache_session import (
 )
 from datetime import datetime
 import logging 
+import os
 
+if not os.path.exists('logs') :
+    os.mkdir('logs')
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -32,7 +37,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 # Create a file handler to save logs to a file
-file_handler = logging.FileHandler('transfer_service.log')
+file_handler = logging.FileHandler('logs/transfer_service.log')
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
 file_handler.setFormatter(formatter)
@@ -128,7 +133,6 @@ class TransferCeleryTaskImpl(TransferCeleryTask):
             update_transfer_history_by_request_id(request_id, TransferHistoryModelForUpdateDataBase(**new_data), db)
             return
 
-
         user_data = get_user(from_user, db)
         logger.debug(f'db_user > get_user > response [request_id: {request_id} -result: {user_data is not None}]')
 
@@ -184,5 +188,5 @@ app, transfer_worker = create_worker_from(TransferCeleryTaskImpl)
 
 # start worker
 if __name__ == '__main__':
-    app.worker_main()
+    app.worker_main() 
 

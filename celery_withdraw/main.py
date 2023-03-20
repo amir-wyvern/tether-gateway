@@ -1,6 +1,8 @@
-import sys
-
-sys.path.append('../')
+# If you intend to run the file independently (you do not intend to run with Docker), remove the section from the comment
+# ======================
+# import sys
+# sys.path.append('../')
+# ======================
 
 from db.database import get_db
 from db import db_config
@@ -31,8 +33,12 @@ from dotenv import dotenv_values
 from datetime import datetime
 from getpass import getpass
 import logging 
+import os
 
-ENV = dotenv_values("celery_withdraw/.env")
+if not os.path.exists('logs') :
+    os.mkdir('logs')
+
+ENV = dotenv_values(".env")
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -45,7 +51,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 # Create a file handler to save logs to a file
-file_handler = logging.FileHandler('withdraw_service.log')
+file_handler = logging.FileHandler('logs/withdraw_service.log')
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
 file_handler.setFormatter(formatter)
