@@ -26,6 +26,10 @@ from auth.oauth2 import (
 )
 from db.db_user import get_user
 import logging
+import os
+
+if not os.path.exists('logs') :
+    os.mkdir('logs')
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -38,7 +42,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 # Create a file handler to save logs to a file
-file_handler = logging.FileHandler('withdraw_route.log')
+file_handler = logging.FileHandler('logs/withdraw_route.log')
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
 file_handler.setFormatter(formatter)

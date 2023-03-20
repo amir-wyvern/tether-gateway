@@ -21,7 +21,6 @@ from auth.oauth2 import (
 
 router = APIRouter(prefix='/user', tags=['User'])
 
-
 @router.get('/info', response_model=UserDisplay, responses={404:{'model':HTTPError}})
 def user_info(user_id: int=Depends(get_current_user), db: Session=Depends(get_db)):
     

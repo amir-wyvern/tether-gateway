@@ -1,4 +1,3 @@
-from fastapi.responses import JSONResponse
 from fastapi import (
     APIRouter,
     Depends,
@@ -27,6 +26,10 @@ from auth.oauth2 import (
 from uuid import uuid4
 from datetime import datetime
 import logging
+import os
+
+if not os.path.exists('logs') :
+    os.mkdir('logs')
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -39,7 +42,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 # Create a file handler to save logs to a file
-file_handler = logging.FileHandler('deposit_route.log')
+file_handler = logging.FileHandler('logs/deposit_route.log')
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
 file_handler.setFormatter(formatter)
