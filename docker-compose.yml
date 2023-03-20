@@ -11,15 +11,16 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: cb5f6cf580aeaaed4c3
-      MYSQL_DATABASE: tether_gateway
-      MYSQL_USER: wyvern
-      MYSQL_PASSWORD: c3b0ec4695394b6a690
+      MYSQL_ROOT_PASSWORD: <root_password>
+      MYSQL_DATABASE: <database name>
+      MYSQL_USER: <username>
+      MYSQL_PASSWORD: <user_password>
+
     networks:
       - my-network
     ports:
       - "3306:3306"
-    volumes: 
+    volumes:
       - mysql_data:/var/lib/mysql
     deploy:
       replicas: 1
@@ -28,40 +29,69 @@ services:
 
   fastapi:
     build: .
-    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    # depends_on:
-    #   - redis
+    ports:
+      - "80:80"
+    depends_on:
+      - redis
+      - mysql
     networks:
       - my-network
+    volumes:
+      - logs:/app/logs
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
+      CACHE_URL: redis://<hostname>:<port>
+
+  withdraw:
+    build:
+      context: .
+      dockerfile: celery_withdraw/Dockerfile
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - my-network
+    volumes:
+      - logs:/withdraw/logs
+    environment:
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
+      CACHE_URL: redis://<hostname>:<port>
       
-  # fastapi:
-  #   build: .
-  #   # command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-  #   # depends_on:
-  #   #   - redis
-  #   networks:
-  #     - my-network
-  #   environment:
-  #     - REDIS_HOST=redis
-  #     - REDIS_PORT=6379
-
-  # celery:
-  #   image: celery:4
-  #   command: celery -A app.worker worker --loglevel=INFO
-  #   depends_on:
-  #     - redis
-  #   networks:
-  #     - my-network
-  #   environment:
-  #     - REDIS_HOST=redis
-  #     - REDIS_PORT=6379
-
+  deposit:
+    build:
+      context: .
+      dockerfile: celery_deposit/Dockerfile
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - my-network
+    volumes:
+      - logs:/deposit/logs
+    environment:
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
+      CACHE_URL: redis://<hostname>:<port>
+      
+  transfer:
+    build:
+      context: .
+      dockerfile: celery_transfer/Dockerfile
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - my-network
+    volumes:
+      - logs:/transfer/logs
+    environment:
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
+      CACHE_URL: redis://<hostname>:<port>
+      
 networks:
   my-network:
     driver: bridge
 
 volumes:
   mysql_data:
+
+  logs:
