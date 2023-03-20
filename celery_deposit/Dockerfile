@@ -1,6 +1,15 @@
-FROM python:3.8
-ADD ./celery_deposit/requirements.txt /
-ADD ./celery_deposit/main.py /
-ADD ./celery_deposit/ /celery_tasks/
-RUN pip3 install -r requirements.txt
-ENTRYPOINT celery -A main worker --beat --concurrency=4 --loglevel=info -n deposit_worker.%h
+FROM python:3.9
+WORKDIR /deposit
+# 
+#COPY ./requirements.txt /app
+COPY ./celery_deposit/.env ./celery_deposit/main.py ./celery_deposit/requirements.txt /deposit
+# ./requirements.txt ./.env ./main.py /deposit
+COPY ../db /deposit/db
+COPY ../celery_tasks /deposit/celery_tasks
+COPY ../cache /deposit/cache
+COPY ../schemas.py /deposit
+
+#RUN pip install --upgrade -r /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /deposit/requirements.txt
+
+ENTRYPOINT celery -A main worker --concurrency=4 --loglevel=info -n deposit_worker.%h
