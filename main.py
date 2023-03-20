@@ -10,7 +10,6 @@ from router import (
 from db import models, db_config, db_main_account
 from db.database import engine, get_db
 from dotenv import dotenv_values
-import os
 from pathlib import Path
 from schemas import InitMainAccount
 
