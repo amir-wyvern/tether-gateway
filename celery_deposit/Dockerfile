@@ -12,4 +12,4 @@ COPY ../schemas.py /deposit
 #RUN pip install --upgrade -r /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /deposit/requirements.txt
 
-ENTRYPOINT celery -A main worker --concurrency=4 --loglevel=info -n deposit_worker.%h
+ENTRYPOINT celery -A main worker --beat --concurrency=4 --loglevel=info -n deposit_worker.%h
