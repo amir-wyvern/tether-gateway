@@ -19,3 +19,4 @@
 1019 = deposit has locked
 1020 = transfer has locked 
 1021 = to_user is same from_user 
+1022 = to_user not found
