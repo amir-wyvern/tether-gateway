@@ -39,6 +39,7 @@ parsimonious==0.8.1
 prompt-toolkit==3.0.36
 protobuf==3.19.5
 pycryptodome==3.17
+cryptography==39.0.1
 pydantic==1.10.5
 PyMySQL==1.0.2
 pyrsistent==0.19.3
