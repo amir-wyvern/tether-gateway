@@ -26,12 +26,11 @@ from cache.cache_session import (
 )
 
 from web3 import Web3
-from celery_withdraw.pk_security import decrypt_private_key
+from pk_security import decrypt_private_key
 
 import json
 from dotenv import dotenv_values
 from datetime import datetime
-from getpass import getpass
 import logging 
 import os
 
@@ -178,7 +177,7 @@ class WithdrawCeleryTaskImpl(WithdrawCeleryTask):
 
     def __init__(self):
 
-        self.pk_password = getpass("Enter password for private key: ")
+        self.pk_password = ENV['PASSWORD_PRIVATE_KEY']
         try :
             db = get_db().__next__()
             encryted_private_key = get_p_withdraw(db)
