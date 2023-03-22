@@ -61,6 +61,10 @@ def transfer_request(request: TransferRequest, user_id: int=Depends(get_current_
         logger.info(f'to_user is same from_user [request_id: {request_id} -user_id: {user_id}]')
         raise HTTPException(status_code=403, detail={'internal_code':1021, 'message':'to_user is same from_user'})
     
+    if db_user.get_user(request.to_user, db) == None:
+        logger.info(f'the to_user not found [request_id: {request_id} -user_id: {user_id} -to_user: {request.to_user}]')
+        raise HTTPException(status_code=403, detail={'internal_code':1022, 'message':'the to_user not found'})
+    
     config = db_config.get_config(db)
 
     if config.transfer_lock == True:
@@ -112,5 +116,3 @@ def transfer_history(start_time: datetime, end_time: datetime, user_id: int=Depe
 
     history = db_transfer.get_transfer_history_by_time_and_user(user_id, start_time, end_time, db)
     return {'txs': history }
-
-
