@@ -107,10 +107,10 @@ In finally to Run this project:
 ```bash
   docker compose up
 ```
-
 ## Usage
+
 _After ready docker services, now open this page for API docs:_ \
-_http://0.0.0.0/docs  or  http:<your-server-ip>/docs_
+_http://0.0.0.0/docs  or  http://your-server-ip/docs_
 
 ## Features
 
