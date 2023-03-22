@@ -1,6 +1,7 @@
 version: "3"
 
 services:
+
   redis:
     image: redis:6-alpine
     ports:
@@ -11,11 +12,10 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: <root_password>
-      MYSQL_DATABASE: <database name>
-      MYSQL_USER: <username>
-      MYSQL_PASSWORD: <user_password>
-
+      MYSQL_ROOT_PASSWORD: <root password>
+      MYSQL_DATABASE: tether_gateway
+      MYSQL_USER: <username sql>
+      MYSQL_PASSWORD: <username password>
     networks:
       - my-network
     ports:
@@ -39,8 +39,11 @@ services:
     volumes:
       - logs:/app/logs
     environment:
-      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
-      CACHE_URL: redis://<hostname>:<port>
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@mysql/tether_gateway
+      CACHE_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
 
   withdraw:
     build:
@@ -54,8 +57,11 @@ services:
     volumes:
       - logs:/withdraw/logs
     environment:
-      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
-      CACHE_URL: redis://<hostname>:<port>
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@mysql/tether_gateway
+      CACHE_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
       
   deposit:
     build:
@@ -69,8 +75,11 @@ services:
     volumes:
       - logs:/deposit/logs
     environment:
-      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
-      CACHE_URL: redis://<hostname>:<port>
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@mysql/tether_gateway
+      CACHE_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
       
   transfer:
     build:
@@ -84,8 +93,11 @@ services:
     volumes:
       - logs:/transfer/logs
     environment:
-      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@<hostname>/<database name>
-      CACHE_URL: redis://<hostname>:<port>
+      SQLALCHEMY_DATABASE_URL: mysql+pymysql://<username>:<password>@mysql/tether_gateway
+      CACHE_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
       
 networks:
   my-network:
@@ -93,5 +105,5 @@ networks:
 
 volumes:
   mysql_data:
-
   logs:
+  
