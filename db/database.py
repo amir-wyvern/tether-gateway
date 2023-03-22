@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-SQLALCHEMY_DATABASE_URL = os.getenv('SQLALCHEMY_DATABASE_URL')
+SQLALCHEMY_DATABASE_URL = os.environ.get('SQLALCHEMY_DATABASE_URL')
 
 dotenv_path = Path('.env')
 load_dotenv(dotenv_path=dotenv_path)
