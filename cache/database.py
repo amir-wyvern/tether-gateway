@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 import redis
 
-CACHE_URL = os.getenv('CACHE_URL')
+CACHE_URL = os.environ.get('CACHE_URL')
 
 dotenv_path = Path('.env')
 load_dotenv(dotenv_path=dotenv_path)
