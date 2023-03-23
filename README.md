@@ -112,13 +112,6 @@ In finally to Run this project:
 _After ready docker services, now open this page for API docs:_ \
 _http://0.0.0.0/docs  or  http://your-server-ip/docs_
 
-## Features
-
-- Adding more blockchain networks
-- Adding more stable coins like dai, ...
-
-
-
 
 ## Contributing
 
