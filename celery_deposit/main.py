@@ -60,11 +60,11 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 
-config = dotenv_values(".env")
+CONFIG = dotenv_values(".env")
 
-TRANSFER_HASH = config['TRANSFER_HASH']
-REQUEST_EXPIRE_TIME = timedelta(minutes= int(config['REQUEST_EXPIRE_TIME']))
-TX_EXPIRE_TIME = timedelta(minutes= int(config['TX_EXPIRE_TIME']))
+TRANSFER_HASH = CONFIG['TRANSFER_HASH']
+REQUEST_EXPIRE_TIME = timedelta(minutes= int(CONFIG['REQUEST_EXPIRE_TIME']))
+TX_EXPIRE_TIME = timedelta(minutes= int(CONFIG['TX_EXPIRE_TIME']))
 
 def safe_financial(func):
   
@@ -123,12 +123,12 @@ class Contract:
     def __init__(self) -> None:
 
         logger.debug('Contract class is initialing...')
-        self.w3 = Web3(Web3.HTTPProvider(config["PROVIDER_1"]))
+        self.w3 = Web3(Web3.HTTPProvider(CONFIG["PROVIDER_1"]))
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-        abi = config["ABI"]
+        abi = CONFIG["ABI"]
         abi = abi.replace('\'', '"')
         abi = json.loads(abi)
-        self.tether = self.w3.eth.contract(address= config["CONTRACT"], abi= abi)
+        self.tether = self.w3.eth.contract(address= CONFIG["CONTRACT"], abi= abi)
         logger.debug('Contract class is initialed')
 
     def tx_receipt(self, tx_hash):
